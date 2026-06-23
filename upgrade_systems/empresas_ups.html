@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control | Gestión de Empresas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --header-bg: #1e293b; 
+            --primary-blue: #1e3a8a;
+            --bg-body: #f1f5f9;
+            --border: #e2e8f0;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            margin: 0;
+            color: #334155;
+            padding-bottom: 50px;
+        }
+
+        /* --- NAVEGACIÓN Y CABECERA --- */
+        .nav-wrapper { margin: 25px 0 0 30px; }
+        .btn-back {
+            text-decoration: none; color: var(--header-bg); font-size: 0.85rem; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px;
+            background: white; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease; border: 1px solid transparent;
+        }
+        .btn-back:hover { transform: translateX(-5px); background: var(--header-bg); color: white; }
+
+        .top-panel {
+            background-color: var(--header-bg);
+            margin: 15px 20px 25px 20px;
+            padding: 35px 45px;
+            border-radius: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            color: white; box-shadow: 0 10px 25px -5px rgba(30, 41, 59, 0.3);
+        }
+
+        .top-panel h1 { margin: 0; font-size: 1.5rem; }
+        .top-panel p { margin: 5px 0 0 0; opacity: 0.7; font-size: 0.9rem; }
+
+        /* --- BOTÓN AGREGAR (ESTILO HEADER ACCIÓN) --- */
+        .btn-header {
+            background: transparent; color: white; border: 2px solid rgba(255, 255, 255, 0.6);
+            padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: 600;
+            display: flex; align-items: center; gap: 10px; transition: all 0.4s ease;
+        }
+        .btn-header:hover { background: white; color: var(--header-bg); transform: translateY(-2px); }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        /* --- GRID DE INFORMACIÓN (STATS) --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: white; padding: 20px; border-radius: 16px; border: 1px solid var(--border);
+            display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .stat-icon { 
+            width: 45px; height: 45px; border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+            background: #eff6ff; color: var(--primary-blue);
+        }
+        .stat-info span { display: block; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+        .stat-info strong { font-size: 1.1rem; color: var(--header-bg); }
+
+        /* --- TABLA Y CARD --- */
+        .card { 
+            background: white; border-radius: 16px; border: 1px solid var(--border); 
+            overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th {
+            background-color: #f8fafc; padding: 18px; font-size: 0.75rem;
+            text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+        td { padding: 18px; border-bottom: 1px solid var(--border); font-size: 0.95rem; color: #475569; }
+        tr:hover td { background-color: #f8fafc; }
+
+        /* --- ACCIONES --- */
+        .btn-delete {
+            color: #cbd5e1; background: none; border: none; cursor: pointer;
+            padding: 8px; border-radius: 8px; transition: 0.2s;
+        }
+        .btn-delete:hover { color: var(--danger); background: #fef2f2; }
+
+        .empty-state {
+            padding: 80px 0; text-align: center; color: var(--text-muted);
+        }
+        .empty-state i { font-size: 3rem; margin-bottom: 15px; opacity: 0.2; }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.8); display: none;
+            justify-content: center; align-items: center; z-index: 1000;
+            backdrop-filter: blur(6px);
+        }
+        .modal {
+            background: white; width: 90%; max-width: 500px; border-radius: 20px;
+            padding: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .modal h2 { margin-top: 0; color: var(--header-bg); font-size: 1.4rem; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: var(--header-bg); }
+        .form-group input { 
+            width: 100%; padding: 12px; border: 1.5px solid var(--border); 
+            border-radius: 10px; box-sizing: border-box; font-family: inherit;
+        }
+        .form-group input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1); }
+
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }
+        .btn-cancel { background: #f1f5f9; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; color: var(--text-muted); font-weight: 600; }
+        .btn-save { background: var(--header-bg); color: white; border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+
+    </style>
+</head>
+<body>
+
+    <div class="nav-wrapper">
+        <a href="Index.html" class="btn-back"><i class="fas fa-chevron-left"></i> Volver al Menú</a>
+    </div>
+
+    <header class="top-panel">
+        <div>
+            <h1>Directorio de Empresas</h1>
+            <p>Administración de entidades registradas en el sistema</p>
+        </div>
+        <button class="btn-header" onclick="toggleModal(true)">
+            <i class="fas fa-plus"></i> Registrar Empresa
+        </button>
+    </header>
+
+    <main class="main-content">
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-building"></i></div>
+                <div class="stat-info">
+                    <span>Total Empresas</span>
+                    <strong id="countEmpresas">0</strong>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-info">
+                    <span>Estado</span>
+                    <strong>Sincronizado</strong>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#fff7ed; color:#ea580c;"><i class="fas fa-info-circle"></i></div>
+                <div class="stat-info">
+                    <span>Uso</span>
+                    <strong>Memoria Local</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <table id="mainTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Nombre de la Empresa</th>
+                        <th>Dirección</th>
+                        <th>Contacto</th>
+                        <th>Responsable</th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+
+            <div id="emptyContainer" class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <p>No hay empresas registradas actualmente.</p>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2><i class="fas fa-plus-circle"></i> Nuevo Registro</h2>
+            <form id="empresaForm">
+                <div class="form-group">
+                    <label>Nombre Legal</label>
+                    <input type="text" id="nombre" required placeholder="Ej. Logística Avanzada S.A.">
+                </div>
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input type="text" id="direccion" required placeholder="Calle, Número, Ciudad">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono de Contacto</label>
+                    <input type="tel" id="telefono" required placeholder="+1 234 567 890">
+                </div>
+                <div class="form-group">
+                    <label>Representante Autorizado</label>
+                    <input type="text" id="responsable" required placeholder="Nombre completo">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="toggleModal(false)">Cancelar</button>
+                    <button type="submit" class="btn-save">Guardar Empresa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const tableBody = document.getElementById('tableBody');
+        const mainTable = document.getElementById('mainTable');
+        const emptyContainer = document.getElementById('emptyContainer');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const empresaForm = document.getElementById('empresaForm');
+        const countLabel = document.getElementById('countEmpresas');
+
+        // Clave única para compartir datos con el otro formulario
+        let empresas = JSON.parse(localStorage.getItem('mis_empresas_v2')) || [];
+
+        function init() { renderTable(); }
+
+        function toggleModal(show) { 
+            modalOverlay.style.display = show ? 'flex' : 'none'; 
+            if(!show) empresaForm.reset();
+        }
+
+        empresaForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nuevaEmpresa = {
+                id: Date.now(),
+                nombre: document.getElementById('nombre').value,
+                direccion: document.getElementById('direccion').value,
+                telefono: document.getElementById('telefono').value,
+                responsable: document.getElementById('responsable').value
+            };
+            empresas.push(nuevaEmpresa);
+            actualizarDatos();
+            toggleModal(false);
+        });
+
+        function eliminarRegistro(id) {
+            if(confirm('¿Seguro que desea eliminar esta empresa?')) {
+                empresas = empresas.filter(emp => emp.id !== id);
+                actualizarDatos();
+            }
+        }
+
+        function actualizarDatos() {
+            localStorage.setItem('mis_empresas_v2', JSON.stringify(empresas));
+            renderTable();
+        }
+
+        function renderTable() {
+            countLabel.innerText = empresas.length;
+            if (empresas.length === 0) {
+                emptyContainer.style.display = 'block';
+                mainTable.style.display = 'none';
+                return;
+            }
+            emptyContainer.style.display = 'none';
+            mainTable.style.display = 'table';
+            tableBody.innerHTML = empresas.map(emp => `
+                <tr>
+                    <td style="font-weight:600; color:var(--primary-blue)">${emp.nombre}</td>
+                    <td>${emp.direccion}</td>
+                    <td>${emp.telefono}</td>
+                    <td>${emp.responsable}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete" title="Eliminar" onclick="eliminarRegistro(${emp.id})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.onclick = (e) => { if (e.target == modalOverlay) toggleModal(false); }
+        init();
+    </script>
+</body>
+</html>

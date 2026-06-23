@@ -1,0 +1,250 @@
+/* Variables de color actualizadas para un look más profesional */
+:root {
+    --rojo: #ef4444;
+    --amarillo: #f59e0b;
+    --verde: #10b981;
+    --oscuro: #1f2937; /* Un gris muy oscuro, casi negro */
+    --gris-fondo: #f3f4f6;
+    --blanco: #ffffff;
+    --gris-borde: #e5e7eb;
+    --sidebar-width: 260px;
+}
+
+/* Reset básico */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--gris-fondo);
+    color: var(--oscuro);
+    display: flex; /* Para poner la sidebar al lado del contenido */
+    min-height: 100vh;
+}
+
+/* --- Barra Lateral (Sidebar) --- */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color:#7E7F81;
+    border-right: 1px solid var(--gris-borde);
+    display: flex;
+    flex-direction: column;
+    padding: 30px 20px;
+    position: fixed; /* Se queda fija al hacer scroll */
+    height: 100vh;
+}
+
+/* Área de Perfil de Usuario */
+.user-profile {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--gris-borde);
+}
+
+.user-photo-container {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: #e5e7eb; /* Gris claro de fondo */
+    margin: 0 auto 15px;
+    overflow: hidden; /* Para que la imagen se corte en círculo */
+    border: 3px solid var(--gris-borde);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ajusta la foto sin deformarla */
+}
+
+/* Icono de usuario por defecto  */
+.user-placeholder-icon {
+    font-size: 3rem;
+    color: #9ca3af;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--oscuro);
+}
+
+/* Botones de Navegación (A, B, C, D) */
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Espacio entre botones */
+}
+
+.nav-button {
+    display: block;
+    padding: 12px 15px;
+    background-color:#E7E7E7;
+    border: 1px solid var(--gris-borde);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--oscuro);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-align: left; /* Alineado a la izquierda */
+}
+
+.nav-button:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+    transform: translateX(3px); /* Pequeño efecto al pasar el mouse */
+}
+
+/* --- Contenido Principal --- */
+.main-content {
+    margin-left: var(--sidebar-width); /* Espacio para la sidebar fija */
+    flex: 1; /* Ocupa el resto del ancho */
+    padding: 30px;
+}
+
+/* --- Header con fondo de color --- */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding: 20px 30px; /* Añadimos padding para que el color respire */
+    background-color: var(--oscuro); /* Fondo oscuro profesional */
+    color: var(--blanco); /* Texto en blanco para contraste */
+    border-radius: 12px; /* Bordes redondeados para estilo moderno */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.header-title h1 {
+    font-size: 1.6rem;
+    margin: 0;
+}
+
+.header-title p {
+    color: #9ca3af; /* Gris claro para el subtítulo */
+    margin-top: 5px;
+    font-size: 0.9rem;
+}
+
+/* --- Botón de Iniciar Sesión --- */
+.boton-login {
+    padding: 10px 24px;
+    background-color: transparent; /* Fondo transparente */
+    color: var(--blanco);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    border: 2px solid var(--blanco); /* Borde blanco resaltado */
+    transition: all 0.3s ease;
+}
+
+.boton-login:hover {
+    background-color: var(--blanco);
+    color: var(--oscuro); /* Invierte colores al pasar el mouse */
+}
+
+/* --- Recuadros (Tarjetas) del Dashboard --- */
+.resumen-container {
+    display: flex;
+    justify-content: start; /* Alineados a la izquierda */
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.tarjeta {
+    background: var(--blanco);
+    border-radius: 12px;
+    padding: 20px;
+    /* Ajuste de tamaño para que se vean bien en fila */
+    flex: 1 1 calc(33.333% - 20px); /* Ocupan 1/3 del ancho menos el gap */
+    min-width: 250px; /* Ancho mínimo para que no se compriman mucho */
+    max-width: 350px; /* Ancho máximo para que no se estiren mucho */
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-top: 6px solid;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.tarjeta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Colores del Semáforo */
+.vencido { border-color: var(--rojo); }
+.proximo { border-color: var(--amarillo); }
+.al-dia { border-color: var(--verde); }
+
+.card-title {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    margin-bottom: 10px;
+}
+
+.numero {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    margin: 10px 0;
+}
+
+.card-desc {
+    font-size: 0.95rem;
+    color: var(--oscuro);
+}
+
+/* Botón "Subir Documento" - ajustado */
+.boton-subir {
+    display: inline-block;
+    margin-top: 30px;
+    padding: 12px 30px;
+    background-color: var(--oscuro);
+    color: var(--blanco);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.boton-subir:hover {
+    background-color: #374151;
+}
+
+@media (max-width: 768px) {
+    body {
+        flex-direction: column; 
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid var(--gris-borde);
+        padding: 20px;
+    }
+    
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+    }
+    
+    .tarjeta {
+        max-width: 100%; 
+    
+    }
+    
+}
