@@ -81,7 +81,7 @@
         .btn-update { background: #dbeafe; color: #1d4ed8; }
         .btn-suspend { background: #fee2e2; color: #b91c1c; }
         .btn-activate { background: #d1fae5; color: #065f46; } 
-        .btn-whatsapp { background: #e8fbf0; color: #128c7e; border: 1px solid #bbf7d0; } /* Estilo WhatsApp */
+        .btn-whatsapp { background: #e8fbf0; color: #128c7e; border: 1px solid #bbf7d0; }
         .btn-history { background: #fef3c7; color: #b45309; }
         .badge-private { font-family: 'Outfit', sans-serif; background: #f1f5f9; color: #64748b; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block; margin: 2px; min-width: 102px; border: 1px dashed #cbd5e1; text-align: center; }
 
@@ -134,7 +134,7 @@
                 <h2><i class="fas fa-network-wired" style="color:var(--accent-blue);"></i> Estructura Organizacional</h2>
                 <div id="wrapperTablaU">
                     <table>
-                        <thead><tr><th>Código Interno</th><th>Nombre</th><th>Correo</th><th>Rango Asignado</th></tr></thead>
+                        <thead><tr><th>Código Interno</th><th>Nombre</th><th>Canales de Contacto</th><th>Rango Asignado</th></tr></thead>
                         <tbody id="tablaUsuariosBody"></tbody>
                     </table>
                 </div>
@@ -223,8 +223,11 @@
                         <div class="form-grid">
                             <div class="form-group"><label>Nombre Completo del Encargado</label><input type="text" id="userNombre" required></div>
                             <div class="form-group"><label>Rango Organizacional a Asignar</label><select id="userRol" required></select></div>
-                            <div class="form-group"><label>Correo Electrónico de Usuario</label><input type="email" id="userEmail" required></div>
-                            <div class="form-group"><label>Contraseña Asignada</label><input type="password" id="userPass" required></div>
+                            <div class="form-group"><label>Correo Electrónico Empresarial</label><input type="email" id="userEmail" required placeholder="login@empresa.com"></div>
+                            <div class="form-group"><label>Correo Electrónico Personal / Respaldo</label><input type="email" id="userEmailPersonal" required placeholder="personal@gmail.com"></div>
+                            <div class="form-group"><label>Teléfono Empresarial / WhatsApp</label><input type="tel" id="userTelEmpresa" required placeholder="10 dígitos"></div>
+                            <div class="form-group"><label>Teléfono Personal</label><input type="tel" id="userTelPersonal" required placeholder="10 dígitos"></div>
+                            <div class="form-group full"><label>Contraseña Asignada</label><input type="password" id="userPass" required></div>
                         </div>
                         <br><button type="submit" class="btn-submit" style="background:var(--accent-green);"><i class="fas fa-user-plus"></i> Desplegar Nodo de Estructura</button>
                     </form>
@@ -263,7 +266,7 @@
                             </select>
                         </div>
                         <div class="form-grid full">
-                            <label>Comentarios y Descripción Detallada de la Afectación</label>
+                            <label>Comentarios and Descripción Detallada de la Afectación</label>
                             <textarea id="asistenciaComentarios" rows="4" style="width: 100%; padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 0.95rem; background: #f8fafc; outline: none;" placeholder="Describa el estado visual de los daños..." required></textarea>
                         </div>
                         <div class="form-group full">
@@ -404,7 +407,6 @@
             }
         }
 
-        // 🚀 RENDERIZACIÓN CON VALIDACIÓN DE SEMÁFORO ACUMULATIVO INTEGRADO
         function renderizarTablaFiltrada(arregloDatos) {
             const b = document.getElementById('tablaDocsBody') || document.getElementById('tablaDocsPrincipal').getElementsByTagName('tbody')[0];
             if(!b) return; 
@@ -435,7 +437,6 @@
                     timestampCompleto = matchTime[1];
                 }
 
-                // 🚀 ARQUITECTURA DE VISIBILIDAD: Trazabilidad oculta para Tipo 1, 2, 3 y Admin. Exclusiva de Consultor y RN.
                 let bloqueRegistroAuditoria = "";
                 if (rAct === 'consultor' || rAct === 'responsable nacional' || rAct === 'responsable_nacional') {
                     bloqueRegistroAuditoria = `
@@ -474,8 +475,7 @@
                         botonSuspender = `<button class="btn-action btn-suspend" onclick="suspenderArchivo(${d.id})"><i class="fas fa-archive"></i> Archivar</button>`;
                     }
                 }
-
-                // 🚀 API DE WHATSAPP UNIVERSAL CON MENSAJE AUTOMÁTICO PRE-CONSTRUIDO
+                
                 let msgWhatsAppUrl = encodeURIComponent(`🚨 [ALERTA UPGRADE SYSTEMS] Hola, se notifica que el documento corporativo [${d.tipo_doc}] se encuentra actualmente en estado [${txt}] con un ${porcentaje} de vigencia consumido. Requiere revisión inmediata.`);
                 let botonWhatsApp = `<a href="https://api.whatsapp.com/send?text=${msgWhatsAppUrl}" target="_blank" class="btn-action btn-whatsapp"><i class="fab fa-whatsapp"></i> Notificar</a>`;
                 
@@ -514,7 +514,7 @@
                     }
                     selectTipo.value = tipoDoc;
                 }
-                if(document.getElementById('docNombre')) document.getElementById('docNombre').value = nombreLimpio + " (Nueva Versión)"; if(document.getElementById('docVencimiento')) document.getElementById('docVencimiento').value = limpiezaFecha; if(document.getElementById('esActualizacion')) document.getElementById('esActualizacion').value = "si";
+                if(document.getElementById('docNombre')) document.getElementById('docNombre').value = nombreLopt || nombreLimpio + " (Nueva Versión)"; if(document.getElementById('docVencimiento')) document.getElementById('docVencimiento').value = limpiezaFecha; if(document.getElementById('esActualizacion')) document.getElementById('esActualizacion').value = "si";
             }
             if(document.getElementById('containerFormSubida')) document.getElementById('containerFormSubida').scrollIntoView({ behavior: 'smooth' });
         }
@@ -582,7 +582,18 @@
         if(document.getElementById('usuarioClienteForm')) {
             document.getElementById('usuarioClienteForm').addEventListener('submit', async function(e) { 
                 e.preventDefault(); 
-                const payload = { accion: 'crear_usuario_operativo', rol_ejecutor: rolActualSesion, nombre: document.getElementById('userNombre').value.trim(), rol: document.getElementById('userRol').value, email: document.getElementById('userEmail').value.trim(), pass: document.getElementById('userPass').value.trim(), empresa_cod: empresaCod }; 
+                const payload = { 
+                    accion: 'crear_usuario_operativo', 
+                    rol_ejecutor: rolActualSesion, 
+                    nombre: document.getElementById('userNombre').value.trim(), 
+                    rol: document.getElementById('userRol').value, 
+                    email: document.getElementById('userEmail').value.trim(), 
+                    email_personal: document.getElementById('userEmailPersonal').value.trim(),
+                    telefono_empresa: document.getElementById('userTelEmpresa').value.trim(),
+                    telefono_personal: document.getElementById('userTelPersonal').value.trim(),
+                    pass: document.getElementById('userPass').value.trim(), 
+                    empresa_cod: empresaCod 
+                }; 
                 const r = await fetch('cliente_procesar.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); 
                 const res = await r.json(); 
                 if(res.status === 'success') { alert("¡Nodo autorizado y registrado exitosamente!"); document.getElementById('usuarioClienteForm').reset(); aplicarRestrictionsMatriz(); cargarUsuariosCliente(); cambiarVista('resumen'); } else { alert(res.message); } 
@@ -601,7 +612,19 @@
         }
 
         function cerrarSesion() { localStorage.clear(); window.location.replace('login_cliente.html'); }
-        async function cargarUsuariosCliente() { const r = await fetch('cliente_procesar.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'listar_usuarios', empresa_cod: empresaCod }) }); const res = await r.json(); if(res.status === 'success') { const b = document.getElementById('tablaUsuariosBody'); if(!b) return; b.innerHTML = ""; res.data.forEach(u => { b.innerHTML += `<tr><td><code>${empresaCod}</code></td><td><strong>${u.nombre}</strong></td><td>${u.email}</td><td><span class="badge role">${u.role || u.rol}</span></td></tr>`; }); } }
+        
+        // 🚀 MEJORA APLICADA EXCLUSIVAMENTE PARA INTERACTUAR CON LA CONSULTA MIGRADA DE EMPRESAS_CLIENTES
+        async function cargarUsuariosCliente() { 
+            const r = await fetch('cliente_procesar.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'listar_usuarios', empresa_cod: empresaCod }) }); 
+            const res = await r.json(); 
+            if(res.status === 'success') { 
+                const b = document.getElementById('tablaUsuariosBody'); if(!b) return; b.innerHTML = ""; 
+                res.data.forEach(u => { 
+                    let rangoFinal = u.rol || u.role || 'No asignado';
+                    b.innerHTML += `<tr><td><code>${empresaCod}</code></td><td><strong>${u.nombre}</strong></td><td>${u.email}</td><td><span class="badge role">${rangoFinal}</span></td></tr>`; 
+                }); 
+            } 
+        }
     </script>
 </body>
 </html>

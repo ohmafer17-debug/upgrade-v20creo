@@ -147,7 +147,7 @@ if ($accion === 'subir_documento') {
     exit;
 }
 
-// --- ACCIÓN 3: LISTAR DOCUMENTOS (MATRIZ DE ESCALAMIENTO ACUMULATIVA CON CORREO AUTOMÁTICO) ---
+// --- ACCIÓN 3: LISTAR DOCUMENTOS ---
 if ($accion === 'listar_documentos') {
     $rol_ejecutor = strtolower(trim($datos['rol_ejecutor']));
     if ($rol_ejecutor === 'administrador') return;
@@ -185,7 +185,6 @@ if ($accion === 'listar_documentos') {
                     $porcentaje_consumido = 100;
                 }
 
-                // 🚀 MATRIZ DE ESCALAMIENTO ACUMULATIVA SEGÚN REQUERIMIENTOS
                 if (intval($row['estatus']) === 0) {
                     $color_semaforo = 'gray'; 
                     $mensaje_estatus = 'Archivado / Inactivo';
@@ -194,18 +193,15 @@ if ($accion === 'listar_documentos') {
                 } elseif ($porcentaje_consumido >= 100 || $timestamp_actual >= $timestamp_vence) {
                     $color_semaforo = 'red'; 
                     $mensaje_estatus = 'Vencido Crítico';
-                    // 🚀 FASE 3: SEMÁFORO ROJO SE ALERTA AUTOMÁTICAMENTE A ABSOLUTAMENTE TODOS LOS ROLES
                     $roles_notificados = ['tipo 3', 'tipo 2', 'tipo 1', 'responsable nacional', 'consultor', 'administrador'];
                     $escalar_a_admin_ups = true; 
                 } elseif ($porcentaje_consumido >= 90) {
                     $color_semaforo = 'orange'; 
                     $mensaje_estatus = 'Próximo a vencer (Urgente)';
-                    // FASE 2: Acumula Tipo 3 más Tipo 2
                     $roles_notificados = ['tipo 3', 'tipo 2'];
                 } elseif ($porcentaje_consumido >= 75) {
                     $color_semaforo = 'yellow'; 
                     $mensaje_estatus = 'Próximo a vencer';
-                    // FASE 1: Nivel más bajo
                     $roles_notificados = ['tipo 3'];
                 } else {
                     $color_semaforo = 'green'; 
@@ -219,7 +215,6 @@ if ($accion === 'listar_documentos') {
             $row['roles_alerta']       = $roles_notificados;
             $row['alerta_global_ups'] = $escalar_a_admin_ups;
 
-            // Contador de actualizaciones desde la tabla de historial de versiones
             $docId = $row['id'];
             $countQuery = $conexion->query("SELECT COUNT(id) as total FROM historial_documentos WHERE documento_id = $docId");
             $countRow = $countQuery->fetch_assoc();
@@ -227,7 +222,6 @@ if ($accion === 'listar_documentos') {
 
             $row['nombre_limpio'] = preg_replace('/\[Reg: .*?\]/', '', $row['nombre_personalizado']);
 
-            // 🚀 AUTOMATIZACIÓN DE CORREO ELECTRÓNICO NATIVO POR ARCHIVO EN SEGUNDO PLANO
             if (in_array(strtolower($rol_ejecutor), $roles_notificados) && $color_semaforo !== 'green') {
                 $para = "responsable_infraestructura@upgradesystems.com";
                 $asunto = "🚨 ALERTA AUTOMÁTICA DE VENCIMIENTO - " . strtoupper($row['tipo_doc']);
@@ -244,7 +238,7 @@ if ($accion === 'listar_documentos') {
     exit;
 }
 
-// --- ACCIÓN 4: INTERRUPTOR DINÁMICO (ARCHIVAR / DESARCHIVAR) ---
+// --- ACCIÓN 4: INTERRUPTOR DINÁMICO ---
 if ($accion === 'suspender_documento') {
     $rol_ejecutor = strtolower(trim($datos['rol_ejecutor']));
     if ($rol_ejecutor === 'tipo 2' || $rol_ejecutor === 'tipo 3') {
@@ -267,7 +261,7 @@ if ($accion === 'suspender_documento') {
     exit;
 }
 
-// --- ACCIÓN 5: VER HISTORIAL DE VERSIONES ---
+// --- ACCIÓN 5: VER HISTORIAL ---
 if ($accion === 'ver_historial_documento') {
     $id_doc = intval($datos['id_documento']);
     $res = $conexion->query("SELECT nombre_personalizado, fecha_vencimiento, nombre_archivo_fisico, fecha_modificacion FROM historial_documentos WHERE documento_id = $id_doc ORDER BY id DESC");
@@ -277,19 +271,20 @@ if ($accion === 'ver_historial_documento') {
     exit;
 }
 
-// --- ACCIÓN 6: LISTAR USUARIOS ---
+// --- ACCIÓN 6: LISTAR USUARIOS (CORREGIDA PARA EMITIR ALIAS DESDE EMPRESAS_CLIENTES) ---
 if ($accion === 'listar_usuarios') {
     $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
     $base_empresa = explode('-', $empresa_cod)[0];
     
-    $res = $conexion->query("SELECT nombre, email, rol FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa-%' ORDER BY id DESC");
+    // 🚀 Extraemos de la tabla empresas_clientes garantizando los alias para u.rol y u.role
+    $res = $conexion->query("SELECT nombre, email, rol, rol AS role FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa-%' ORDER BY id DESC");
     $usuarios = [];
     if($res) { while($row = $res->fetch_assoc()) { $usuarios[] = $row; } }
     echo json_encode(["status" => "success", "data" => $usuarios]);
     exit;
 }
 
-// --- ACCIÓN 7: REGISTRAR AUDITORÍA AUTOMÁTICA DE VISTO/AUDITÓ ---
+// --- ACCIÓN 7 ---
 if ($accion === 'marcar_como_visto') {
     $id_doc  = intval($datos['id_documento']);
     $usuario = $conexion->real_escape_string(trim($datos['usuario_ejecutor']));

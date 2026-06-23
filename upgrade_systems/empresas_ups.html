@@ -26,7 +26,6 @@
             padding-bottom: 50px;
         }
 
-        /* --- NAVEGACIÓN Y CABECERA --- */
         .nav-wrapper { margin: 25px 0 0 30px; }
         .btn-back {
             text-decoration: none; color: var(--header-bg); font-size: 0.85rem; font-weight: 600;
@@ -48,7 +47,6 @@
         .top-panel h1 { margin: 0; font-size: 1.5rem; }
         .top-panel p { margin: 5px 0 0 0; opacity: 0.7; font-size: 0.9rem; }
 
-        /* --- BOTÓN AGREGAR (ESTILO HEADER ACCIÓN) --- */
         .btn-header {
             background: transparent; color: white; border: 2px solid rgba(255, 255, 255, 0.6);
             padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: 600;
@@ -56,10 +54,8 @@
         }
         .btn-header:hover { background: white; color: var(--header-bg); transform: translateY(-2px); }
 
-        /* --- CONTENIDO PRINCIPAL --- */
         .main-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
-        /* --- GRID DE INFORMACIÓN (STATS) --- */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -78,7 +74,6 @@
         .stat-info span { display: block; font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
         .stat-info strong { font-size: 1.1rem; color: var(--header-bg); }
 
-        /* --- TABLA Y CARD --- */
         .card { 
             background: white; border-radius: 16px; border: 1px solid var(--border); 
             overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
@@ -93,19 +88,15 @@
         td { padding: 18px; border-bottom: 1px solid var(--border); font-size: 0.95rem; color: #475569; }
         tr:hover td { background-color: #f8fafc; }
 
-        /* --- ACCIONES --- */
         .btn-delete {
             color: #cbd5e1; background: none; border: none; cursor: pointer;
             padding: 8px; border-radius: 8px; transition: 0.2s;
         }
         .btn-delete:hover { color: var(--danger); background: #fef2f2; }
 
-        .empty-state {
-            padding: 80px 0; text-align: center; color: var(--text-muted);
-        }
+        .empty-state { padding: 80px 0; text-align: center; color: var(--text-muted); }
         .empty-state i { font-size: 3rem; margin-bottom: 15px; opacity: 0.2; }
 
-        /* --- MODAL --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.8); display: none;
@@ -113,23 +104,25 @@
             backdrop-filter: blur(6px);
         }
         .modal {
-            background: white; width: 90%; max-width: 500px; border-radius: 20px;
-            padding: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: white; width: 90%; max-width: 600px; border-radius: 20px;
+            padding: 35px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-height: 85vh; overflow-y: auto;
         }
         .modal h2 { margin-top: 0; color: var(--header-bg); font-size: 1.4rem; }
 
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.85rem; color: var(--header-bg); }
+        .modal-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full { grid-column: span 2; }
+        .form-group label { margin-bottom: 6px; font-weight: 600; font-size: 0.85rem; color: var(--header-bg); }
         .form-group input { 
-            width: 100%; padding: 12px; border: 1.5px solid var(--border); 
-            border-radius: 10px; box-sizing: border-box; font-family: inherit;
+            width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); 
+            border-radius: 10px; box-sizing: border-box; font-family: inherit; font-size: 0.9rem;
         }
         .form-group input:focus { outline: none; border-color: var(--primary-blue); box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.1); }
 
-        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 25px; grid-column: span 2; }
         .btn-cancel { background: #f1f5f9; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; color: var(--text-muted); font-weight: 600; }
         .btn-save { background: var(--header-bg); color: white; border: none; padding: 12px 25px; border-radius: 10px; cursor: pointer; font-weight: 600; }
-
     </style>
 </head>
 <body>
@@ -149,7 +142,6 @@
     </header>
 
     <main class="main-content">
-        
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-building"></i></div>
@@ -180,8 +172,8 @@
                     <tr>
                         <th>Nombre de la Empresa</th>
                         <th>Dirección</th>
-                        <th>Contacto</th>
-                        <th>Responsable</th>
+                        <th>Canales de Contacto (Empresarial / Personal)</th>
+                        <th>Responsable Autorizado</th>
                         <th style="text-align: center;">Acciones</th>
                     </tr>
                 </thead>
@@ -197,27 +189,41 @@
 
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
-            <h2><i class="fas fa-plus-circle"></i> Nuevo Registro</h2>
+            <h2><i class="fas fa-plus-circle"></i> Nuevo Registro de Empresa</h2>
             <form id="empresaForm">
-                <div class="form-group">
-                    <label>Nombre Legal</label>
-                    <input type="text" id="nombre" required placeholder="Ej. Logística Avanzada S.A.">
-                </div>
-                <div class="form-group">
-                    <label>Dirección</label>
-                    <input type="text" id="direccion" required placeholder="Calle, Número, Ciudad">
-                </div>
-                <div class="form-group">
-                    <label>Teléfono de Contacto</label>
-                    <input type="tel" id="telefono" required placeholder="+1 234 567 890">
-                </div>
-                <div class="form-group">
-                    <label>Representante Autorizado</label>
-                    <input type="text" id="responsable" required placeholder="Nombre completo">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="toggleModal(false)">Cancelar</button>
-                    <button type="submit" class="btn-save">Guardar Empresa</button>
+                <div class="modal-form-grid">
+                    <div class="form-group full">
+                        <label>Nombre Legal</label>
+                        <input type="text" id="nombre" required placeholder="Ej. Logística Avanzada S.A.">
+                    </div>
+                    <div class="form-group full">
+                        <label>Dirección Física</label>
+                        <input type="text" id="direccion" required placeholder="Calle, Número, Ciudad">
+                    </div>
+                    <div class="form-group">
+                        <label>Correo Empresarial</label>
+                        <input type="email" id="email_empresa" required placeholder="empresa@dominio.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Correo Personal / Respaldo</label>
+                        <input type="email" id="email_personal" required placeholder="personal@dominio.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono Empresarial / WhatsApp</label>
+                        <input type="tel" id="telefono_whatsapp" required placeholder="Ej. 55XXXXXXXX">
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono Personal / Celular</label>
+                        <input type="tel" id="telefono_personal" required placeholder="Ej. 55XXXXXXXX">
+                    </div>
+                    <div class="form-group full">
+                        <label>Representante Autorizado</label>
+                        <input type="text" id="responsable" required placeholder="Nombre completo del encargado">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-cancel" onclick="toggleModal(false)">Cancelar</button>
+                        <button type="submit" class="btn-save">Guardar Empresa</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -231,7 +237,6 @@
         const empresaForm = document.getElementById('empresaForm');
         const countLabel = document.getElementById('countEmpresas');
 
-        // Clave única para compartir datos con el otro formulario
         let empresas = JSON.parse(localStorage.getItem('mis_empresas_v2')) || [];
 
         function init() { renderTable(); }
@@ -247,7 +252,10 @@
                 id: Date.now(),
                 nombre: document.getElementById('nombre').value,
                 direccion: document.getElementById('direccion').value,
-                telefono: document.getElementById('telefono').value,
+                email_empresa: document.getElementById('email_empresa').value,
+                email_personal: document.getElementById('email_personal').value,
+                telefono_whatsapp: document.getElementById('telefono_whatsapp').value,
+                telefono_personal: document.getElementById('telefono_personal').value,
                 responsable: document.getElementById('responsable').value
             };
             empresas.push(nuevaEmpresa);
@@ -280,8 +288,13 @@
                 <tr>
                     <td style="font-weight:600; color:var(--primary-blue)">${emp.nombre}</td>
                     <td>${emp.direccion}</td>
-                    <td>${emp.telefono}</td>
-                    <td>${emp.responsable}</td>
+                    <td>
+                        <div style="font-size:0.85rem; line-height:1.4;">
+                            <span style="color:var(--primary-blue); font-weight:600;"><i class="fas fa-building"></i> Corp:</span> ${emp.email_empresa} / Tel: ${emp.telefono_whatsapp}<br>
+                            <span style="color:var(--text-muted); font-weight:600;"><i class="fas fa-user font-size:0.8rem"></i> Pers:</span> ${emp.email_personal} / Tel: ${emp.telefono_personal}
+                        </div>
+                    </td>
+                    <td><strong>${emp.responsable}</strong></td>
                     <td style="text-align: center;">
                         <button class="btn-delete" title="Eliminar" onclick="eliminarRegistro(${emp.id})">
                             <i class="fas fa-trash-alt"></i>
