@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>UPGRADE SYSTEMS | Validación Semáforo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        :root { --sidebar: #111827; --accent: #3b82f6; --bg: #f9fafb; }
+        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
+        .sidebar { width: 260px; background: var(--sidebar); color: white; padding: 20px; display: flex; flex-direction: column; }
+        .logo { font-weight: 700; margin-bottom: 40px; font-size: 1.2rem; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+        .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px; color: #9ca3af; text-decoration: none; border-radius: 10px; margin-bottom: 5px; font-weight: 500; }
+        .nav-item.active, .nav-item:hover { background: #1f2937; color: white; }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        th { background: #f8fafc; font-weight: 600; color: #475569; }
+        .status-circle { font-size: 0.9rem; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <a href="#" class="logo"><i class="fas fa-layer-group" style="color:var(--accent)"></i> Upgrade Systems</a>
+        <a href="index_ups.html" class="nav-item"><i class="fas fa-chart-pie"></i> Dashboard</a>
+        <a href="usuarios_ups.html" class="nav-item"><i class="fas fa-building"></i> Alta de Clientes</a>
+        <a href="documentos_ups.html" class="nav-item active"><i class="fas fa-shield-check"></i> Auditoría Semáforo</a>
+        <a href="visualizacion.html" class="nav-item"><i class="fas fa-folder-open"></i> Vista de Confirmación</a>
+    </div>
+    <div class="main-content">
+        <h2>Panel de Cumplimiento Normativo (Control Semáforo)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Semáforo</th>
+                    <th>Archivo / Información de Carga</th>
+                    <th>ID Repositorio</th>
+                    <th>Vencimiento</th>
+                    <th>Acciones de Alerta</th>
+                </tr>
+            </thead>
+            <tbody id="tablaAuditoria"></tbody>
+        </table>
+    </div>
+    <script>
+        if (!localStorage.getItem('ups_session_token')) window.location.href = "login_ups.html";
+
+        function renderAuditoria() {
+            const emps = JSON.parse(localStorage.getItem('ups_empresas_v3')) || [];
+            const tbody = document.getElementById('tablaAuditoria');
+            let rowsHtml = "";
+
+            emps.forEach(emp => {
+                const docs = JSON.parse(localStorage.getItem('docs_' + emp.cod)) || [];
+                docs.forEach(d => {
+                    const hoy = new Date(); hoy.setHours(0,0,0,0);
+                    const fVenc = new Date(d.fecha); fVenc.setHours(0,0,0,0);
+                    const diffDias = Math.ceil((fVenc - hoy) / (1000*60*60*24));
+                    const estaActivo = d.activo !== false;
+
+                    let colorSemaforo = "#10b981"; // Verde
+                    if (!estaActivo || diffDias <= 0) colorSemaforo = "#ef4444"; // Rojo
+                    else if (diffDias >= 1 && diffDias <= 30) colorSemaforo = "#f59e0b"; // Amarillo
+
+                    rowsHtml += `
+                        <tr>
+                            <td><i class="fas fa-circle status-circle" style="color:${colorSemaforo};"></i></td>
+                            <td>
+                                <strong>${d.nombre}</strong><br>
+                                <span style="font-size:0.8rem; color:#64748b;"><i class="fas fa-clock"></i> Subido: ${d.fechaSubida || 'No registrada'}</span>
+                            </td>
+                            <td><code>${emp.cod}</code></td>
+                            <td><b>${d.fecha}</b></td>
+                            <td>
+                                <a href="mailto:${emp.email}?subject=Notificación de Requerimiento - Upgrade Systems" style="color:var(--accent); text-decoration:none; font-weight:600;">
+                                    <i class="fas fa-envelope"></i> Notificar Cliente
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+            tbody.innerHTML = rowsHtml || '<tr><td colspan="5" style="text-align:center; color:#64748b;">No hay documentos cargados en el sistema.</td></tr>';
+        }
+        window.onload = renderAuditoria;
+    </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>UPGRADE SYSTEMS | Consola Máster de Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        :root {
+            --admin-bg: #0f172a;
+            --main-bg: #f8fafc;
+            --text-main: #334155;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--main-bg); color: var(--text-main); }
+        .navbar { background: var(--admin-bg); color: white; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .navbar .brand { font-size: 1.3rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .navbar .brand i { color: var(--success); }
+        .btn-logout { background: none; border: 1px solid #334155; color: #94a3b8; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        .btn-logout:hover { color: #ef4444; border-color: #ef4444; }
+
+        .container { padding: 40px; max-width: 1100px; margin: 0 auto; }
+        .header-section { margin-bottom: 35px; }
+        .header-section h1 { margin: 0; font-size: 1.7rem; color: #1e293b; }
+        .header-section p { color: #64748b; margin: 5px 0 0 0; }
+
+        .layout-grid { display: grid; grid-template-columns: 1fr; gap: 30px; }
+        .table-card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; }
+        .table-card h2 { margin-top: 0; font-size: 1.2rem; color: #1e293b; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { padding: 14px 16px; color: #64748b; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+        td { padding: 16px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        code { background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-weight: 600; color: #0f172a; }
+
+        .status-pill { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .status-pill.active { background: #d1fae5; color: #065f46; }
+        .status-pill.suspended { background: #fee2e2; color: #991b1b; }
+
+        .btn-action { border: none; padding: 8px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-action.suspend { background: #fff5f5; color: var(--danger); border: 1px solid #fecaca; }
+        .btn-action.suspend:hover { background: #fee2e2; }
+        .btn-action.activate { background: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; }
+        .btn-action.activate:hover { background: #d1fae5; }
+
+        /* Estilos del Formulario Lateral o sección */
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 0.8rem; font-weight: 600; color: #64748b; }
+        .form-group input { padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.9rem; }
+        .btn-create { background: var(--admin-bg); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        .btn-create:hover { background: #1e293b; }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="brand"><i class="fas fa-shield-halved"></i> CONSOLA GLOBAL | UPGRADE SYSTEMS</div>
+        <button class="btn-logout" onclick="cerrarSesion()"><i class="fas fa-right-from-bracket"></i> Salir al Login</button>
+    </div>
+
+    <div class="container">
+        <div class="header-section">
+            <h1>Panel de Control del Ecosistema</h1>
+            <p>Consola interna compartida para la gestión de socios corporativos y asignación de clientes.</p>
+        </div>
+
+        <div class="layout-grid">
+            
+            <div class="table-card">
+                <h2><i class="fas fa-user-shield" style="color: #3b82f6;"></i> Socios Administradores (UPS)</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID Máster</th>
+                            <th>Nombre Completo</th>
+                            <th>Correo del Desarrollador</th>
+                            <th>Rango de Sistema</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaSociosBody">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="table-card">
+                <h2><i class="fas fa-building" style="color: var(--success);"></i> Repositorio de Empresas Clientes</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código ID</th>
+                            <th>Razón Social / Empresa</th>
+                            <th>Contacto Corporativo</th>
+                            <th>Estatus Operativo</th>
+                            <th>Acciones Operativas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaEmpresasBody">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="table-card">
+                <h2><i class="fas fa-square-plus" style="color: var(--success);"></i> Dar de Alta Nueva Empresa Cliente</h2>
+                <form id="formNuevaEmpresa">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Código Identificador Único</label>
+                            <input type="text" id="compCod" placeholder="Ej: WAL-TOL, LUSSO-01" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre Corporativo</label>
+                            <input type="text" id="compName" placeholder="Ej: Walmart Sucursal Toluca" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico Oficial</label>
+                            <input type="email" id="compEmail" placeholder="Ej: admin@walmart.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña de Acceso Inicial</label>
+                            <input type="password" id="compPass" placeholder="Clave de primer ingreso" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-create"><i class="fas fa-plus"></i> Registrar y Habilitar en la Plataforma</button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", cargarTablasGlobales);
+
+        // Consultar los datos al backend y separar dinámicamente en las dos tablas
+        async function cargarTablasGlobales() {
+            try {
+                const respuesta = await fetch('admin_procesar.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accion: 'listar_todo' })
+                });
+                const resultado = await respuesta.json();
+
+                if (resultado.status === 'success') {
+                    // 1. RENDERIZAR TABLA DE SOCIOS (USTEDES CUATRO)
+                    const tbodySocios = document.getElementById('tablaSociosBody');
+                    tbodySocios.innerHTML = "";
+                    resultado.socios.forEach(socio => {
+                        tbodySocios.innerHTML += `
+                            <tr>
+                                <td><code>${socio.cod}</code></td>
+                                <td><strong>${socio.nombre}</strong></td>
+                                <td>${socio.email}</td>
+                                <td><span class="status-pill active" style="background:#eff6ff; color:#1e40af;"><i class="fas fa-code"></i> Administrador Máster</span></td>
+                            </tr>
+                        `;
+                    });
+
+                    // 2. RENDERIZAR TABLA DE EMPRESAS (WALMART, ETC)
+                    const tbodyEmpresas = document.getElementById('tablaEmpresasBody');
+                    tbodyEmpresas.innerHTML = "";
+                    if (resultado.empresas.length > 0) {
+                        resultado.empresas.forEach(empresa => {
+                            const esActiva = parseInt(empresa.activo) === 1;
+                            tbodyEmpresas.innerHTML += `
+                                <tr>
+                                    <td><code>${empresa.cod}</code></td>
+                                    <td><strong>${empresa.nombre}</strong></td>
+                                    <td>${empresa.email}</td>
+                                    <td>
+                                        <span class="status-pill ${esActiva ? 'active' : 'suspended'}">
+                                            ${esActiva ? 'Activo' : 'Suspendido'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn-action ${esActiva ? 'suspend' : 'activate'}" 
+                                                onclick="cambiarEstatus('${empresa.cod}', ${esActiva ? 0 : 1})">
+                                            ${esActiva ? '<i class="fas fa-ban"></i> Suspender' : '<i class="fas fa-check"></i> Activar'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        tbodyEmpresas.innerHTML = `<tr><td colspan="5" style="text-align: center;">No hay empresas externas dadas de alta.</td></tr>`;
+                    }
+                }
+            } catch (error) { console.error("Error al cargar datos:", error); }
+        }
+
+        // Cambiar estatus de una empresa
+        async function cambiarEstatus(codEmpresa, nuevoEstatus) {
+            try {
+                const respuesta = await fetch('admin_procesar.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accion: 'alternar_estatus', cod: codEmpresa, nuevo_estatus: nuevoEstatus })
+                });
+                const res = await respuesta.json();
+                if(res.status === 'success') cargarTablasGlobales();
+            } catch (error) { console.error(error); }
+        }
+
+        // Formulario para crear una nueva empresa cliente
+        document.getElementById('formNuevaEmpresa').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const payload = {
+                accion: 'crear_empresa',
+                cod: document.getElementById('compCod').value.trim(),
+                nombre: document.getElementById('compName').value.trim(),
+                email: document.getElementById('compEmail').value.trim(),
+                pass: document.getElementById('compPass').value.trim()
+            };
+
+            try {
+                const respuesta = await fetch('admin_procesar.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const res = await respuesta.json();
+                if (res.status === 'success') {
+                    alert(res.message);
+                    document.getElementById('formNuevaEmpresa').reset();
+                    cargarTablasGlobales(); // Actualizar la tabla de empresas en vivo
+                } else { alert("Error: " + res.message); }
+            } catch (error) { console.error(error); }
+        });
+
+        function cerrarSesion() { localStorage.clear(); window.location.href = 'login_cliente.html'; }
+    </script>
+</body>
+</html>
