@@ -100,6 +100,10 @@
                             <label>Contraseña Temporal de Seguridad</label>
                             <input type="password" id="passUsuario" placeholder="••••••••••••" required>
                         </div>
+                        <div class="form-group full">
+                            <label>Logotipo de la Empresa (Opcional)</label>
+                            <input type="file" id="empresaLogo" accept="image/*">
+                        </div>
                     </div>
                     <br>
                     <button type="submit" class="btn-submit"><i class="fas fa-cloud-arrow-up"></i> Generar Licencia y Cuenta</button>
@@ -158,6 +162,13 @@
                         <div class="form-group">
                             <label>Nueva Contraseña Temporal (Vacío para no cambiar)</label>
                             <input type="password" id="editEmpresaPass" placeholder="Mínimo 10 caracteres con complejidad">
+                        </div>
+                        <div class="form-group">
+                            <label>Logotipo de la Empresa (Subir para reemplazar)</label>
+                            <input type="file" id="editEmpresaLogo" accept="image/*">
+                            <div id="editLogoPreview" style="margin-top: 10px; display: none;">
+                                <img id="editLogoImg" src="" alt="Logo Actual" style="max-height: 45px; border-radius: 8px; border: 1px solid #cbd5e1; padding: 3px; background: white;">
+                            </div>
                         </div>
                     </div>
                     <br>

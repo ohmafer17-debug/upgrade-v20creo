@@ -2,8 +2,13 @@
 // =================================================================
 // PROCESADOR AUTOMÁTICO EN SEGUNDO PLANO: alertas_automaticas.php
 // =================================================================
+header("Content-Type: text/plain; charset=UTF-8");
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-require_once "../config/conexion.php";
+echo "=== INICIANDO ESCANEO AUTOMÁTICO DE ALERTAS ===\n\n";
+
+require_once __DIR__ . "/../config/conexion.php";
 
 $fecha_actual = date('Y-m-d');
 
@@ -33,42 +38,66 @@ if ($resDocs && $resDocs->num_rows > 0) {
             $porcentaje_consumido = ($dias_transcurridos / $dias_totales_vida) * 100;
         }
 
-        $enviar_alerta = false;
+        $dias_para_vencer = ($timestamp_vence - $timestamp_actual) / 86400;
+
+        $roles_notificados = [];
+        $notificar_staff = false;
         $mensaje_estatus = "";
         
-        // Evaluamos las alertas según tu matriz
-        if ($porcentaje_consumido >= 100 || $timestamp_actual >= $timestamp_vence) {
-            $enviar_alerta = true;
-            $mensaje_estatus = "VENCIDO CRÍTICO";
-        } elseif ($porcentaje_consumido >= 90) {
-            $enviar_alerta = true;
-            $mensaje_estatus = "PRÓXIMO A VENCER (URGENTE)";
-        } elseif ($porcentaje_consumido >= 75) {
-            $enviar_alerta = true;
-            $mensaje_estatus = "PRÓXIMO A VENCER";
+        // 🚀 EVALUAMOS LAS ALERTAS SEGÚN LA NUEVA MATRIZ DE SEMÁFOROS
+        if ($dias_para_vencer <= 1) {
+            // Semáforo Rojo: 1 día o menos para vencer, o ya vencido
+            $mensaje_estatus = "CRÍTICO (ROJO)";
+            $roles_notificados = ['tipo 3', 'tipo 2', 'tipo 1', 'responsable nacional', 'responsable_nacional', 'consultor'];
+            $notificar_staff = true;
+        } elseif ($porcentaje_consumido >= 95) {
+            // Naranja Alerta 2
+            $mensaje_estatus = "PRÓXIMO A VENCER MUY URGENTE (NARANJA 2)";
+            $roles_notificados = ['tipo 3', 'tipo 2', 'tipo 1', 'responsable nacional', 'responsable_nacional', 'consultor'];
+        } elseif ($porcentaje_consumido >= 85) {
+            // Naranja Alerta 1
+            $mensaje_estatus = "PRÓXIMO A VENCER URGENTE (NARANJA 1)";
+            $roles_notificados = ['tipo 3', 'tipo 2', 'tipo 1', 'responsable nacional', 'responsable_nacional'];
+        } elseif ($porcentaje_consumido >= 70) {
+            // Amarillo Alerta 2
+            $mensaje_estatus = "PRÓXIMO A VENCER (AMARILLO 2)";
+            $roles_notificados = ['tipo 3', 'tipo 2', 'tipo 1'];
+        } elseif ($porcentaje_consumido >= 50) {
+            // Amarillo Alerta 1
+            $mensaje_estatus = "PRÓXIMO A VENCER (AMARILLO 1)";
+            $roles_notificados = ['tipo 3', 'tipo 2'];
         }
 
-        // 2. Si requiere alerta, localizamos de inmediato los correos de la empresa
-        if ($enviar_alerta) {
+        // 2. Si requiere alerta, localizamos de inmediato los usuarios con los roles correspondientes
+        if ($mensaje_estatus !== "") {
             $cod_empresa = $doc['empresa_cod'];
-            $base_empresa = explode('-', $cod_empresa)[0];
             
-            $sqlUsuarios = "SELECT nombre, email, rol FROM empresas_clientes 
-                            WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa-%'";
+            // 🚀 AISLAMIENTO DE INQUILINOS POR BARRA INCLINADA
+            $base_empresa = explode('/', $cod_empresa)[0];
+            $filtro_like = $base_empresa . "/%";
             
-            $resUsuarios = $conexion->query($sqlUsuarios);
+            $roles_sql = "'" . implode("','", $roles_notificados) . "'";
+            
+            $queryUsers = "SELECT nombre, email, rol, telefono_principal, telefono_adicional 
+                           FROM empresas_clientes 
+                           WHERE (cod = ? OR cod LIKE ?) AND LOWER(rol) IN ($roles_sql)";
+            
+            $stmtUser = $conexion->prepare($queryUsers);
+            $stmtUser->bind_param("ss", $base_empresa, $filtro_like);
+            $stmtUser->execute();
+            $resUsuarios = $stmtUser->get_result();
+            
+            $nombre_limpio_doc = preg_replace('/\[Reg: .*?\]/', '', $doc['nombre_personalizado']);
+            $porcentaje_texto = round($porcentaje_consumido, 2) . '%';
             
             if ($resUsuarios && $resUsuarios->num_rows > 0) {
                 while ($user = $resUsuarios->fetch_assoc()) {
                     
                     $para = $user['email'];
-                    $nombre_limpio_doc = preg_replace('/\[Reg: .*?\]/', '', $doc['nombre_personalizado']);
-                    $porcentaje_texto = round($porcentaje_consumido, 2) . '%';
-
                     $asunto = "🚨 ALERTA AUTOMÁTICA UPGRADE SYSTEMS - " . $mensaje_estatus;
                     
-                    $mensaje = "Hola " . $user['nombre'] . ",\n\n";
-                    $mensaje .= "Te notificamos que un documento obligatorio está en estado crítico:\n\n";
+                    $mensaje = "Hola " . $user['nombre'] . " (Rol: " . $user['rol'] . "),\n\n";
+                    $mensaje .= "Te notificamos que un documento obligatorio requiere atención de tu parte:\n\n";
                     $mensaje .= "• Documento: " . $doc['tipo_doc'] . "\n";
                     $mensaje .= "• Detalle: " . $nombre_limpio_doc . "\n";
                     $mensaje .= "• Vence el: " . $fecha_vence . "\n";
@@ -79,11 +108,92 @@ if ($resDocs && $resDocs->num_rows > 0) {
                     $cabeceras = "From: no-reply@upgradesystems.com\r\n";
                     $cabeceras .= "X-Mailer: PHP/" . phpversion();
 
+                    // Envío de correo
                     mail($para, $asunto, $mensaje, $cabeceras);
+                    
+                    // Envío de WhatsApp (Bitácora local)
+                    $msg_whatsapp = "🚨 ALERTA UPGRADE SYSTEMS [{$mensaje_estatus}]: Hola {$user['nombre']}, el documento [{$doc['tipo_doc']}] está próximo a vencer el {$fecha_vence} ({$porcentaje_texto} consumido). Por favor actualízalo.";
+                    
+                    if (!empty($user['telefono_principal'])) {
+                        enviarNotificacionWhatsApp($user['telefono_principal'], $msg_whatsapp);
+                    }
+                    if (!empty($user['telefono_adicional'])) {
+                        enviarNotificacionWhatsApp($user['telefono_adicional'], $msg_whatsapp);
+                    }
+                }
+            }
+            $stmtUser->close();
+
+            // 🚀 ESCALAMIENTO AL STAFF (ROJO)
+            if ($notificar_staff) {
+                $resAdmins = $conexion->query("SELECT nombre, email FROM admin_ups WHERE estatus = 'Activo'");
+                if ($resAdmins && $resAdmins->num_rows > 0) {
+                    while ($adm = $resAdmins->fetch_assoc()) {
+                        $para_adm = $adm['email'];
+                        $asunto_adm = "🚨 ESCALAMIENTO MÁSTER UPGRADE SYSTEMS - " . $mensaje_estatus;
+                        
+                        $mensaje_adm = "Hola " . $adm['nombre'] . " (Administrador Staff),\n\n";
+                        $mensaje_adm .= "Te notificamos de un escalamiento crítico. El documento de la organización " . $base_empresa . " ha alcanzado su límite de vigencia:\n\n";
+                        $mensaje_adm .= "• Documento: " . $doc['tipo_doc'] . "\n";
+                        $mensaje_adm .= "• Detalle: " . $nombre_limpio_doc . "\n";
+                        $mensaje_adm .= "• Vence el: " . $fecha_vence . "\n";
+                        $mensaje_adm .= "• Tiempo Consumido: " . $porcentaje_texto . "\n\n";
+                        $mensaje_adm .= "El sistema ha alertado al equipo local sin que se haya registrado actualización del expediente.\n\n";
+                        $mensaje_adm .= "Atentamente,\nUpgrade Systems";
+
+                        $cabeceras_adm = "From: no-reply@upgradesystems.com\r\n";
+                        $cabeceras_adm .= "X-Mailer: PHP/" . phpversion();
+
+                        mail($para_adm, $asunto_adm, $mensaje_adm, $cabeceras_adm);
+                    }
                 }
             }
         }
     }
 }
-echo "Escaneo de alertas completado.";
+
+echo "Escaneo de alertas completado exitosamente.\n";
+
+// =================================================================
+// 🚀 FUNCIÓN MODULAR PARA NOTIFICACIONES AUTOMÁTICAS DE WHATSAPP
+// =================================================================
+function enviarNotificacionWhatsApp($telefono, $mensaje) {
+    if (empty($telefono)) return false;
+    
+    // Sanitizar número telefónico
+    $telefono_limpio = preg_replace('/[^0-9]/', '', $telefono);
+    if (empty($telefono_limpio)) return false;
+    
+    // Log local de auditoría en scratch/whatsapp_alertas_log.txt
+    $log_dir = __DIR__ . "/../scratch/";
+    if (!is_dir($log_dir)) {
+        mkdir($log_dir, 0777, true);
+    }
+    $log_file = $log_dir . "whatsapp_alertas_log.txt";
+    
+    $fecha = date('Y-m-d H:i:s');
+    $registro = "[$fecha] [Para: $telefono_limpio] MENSAJE: $mensaje\n";
+    file_put_contents($log_file, $registro, FILE_APPEND);
+    
+    // =================================================================
+    // 💡 INTEGRACIÓN CON TWILIO O PROVEEDORES (Futuro):
+    // Cuando contrates un proveedor de WhatsApp Business, descomenta y 
+    // configura este bloque de conexión:
+    // =================================================================
+    /*
+    $api_url = "https://api.tu-proveedor.com/send";
+    $payload = [
+        "to" => $telefono_limpio,
+        "message" => $mensaje
+    ];
+    $ch = curl_init($api_url);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type:application/json'));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $result = curl_exec($ch);
+    curl_close($ch);
+    */
+    
+    return true;
+}
 ?>

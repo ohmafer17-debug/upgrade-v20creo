@@ -53,7 +53,7 @@ if ($result && $result->num_rows > 0) {
 }
 
 // Calcular el código base
-$base_empresa = explode('-', $empresa_cod)[0];
+$base_empresa = explode('/', $empresa_cod)[0];
 $base_empresa_limpio = preg_replace('/[^a-zA-Z0-9]/', '', $base_empresa);
 if (empty($base_empresa_limpio)) {
     $base_empresa_limpio = 'GENERAL';

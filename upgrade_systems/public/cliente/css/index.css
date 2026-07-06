@@ -82,6 +82,21 @@ tr:hover td { background: #fafafa; }
 .btn-whatsapp { background: #e8fbf0; color: #128c7e; border: 1px solid #bbf7d0; }
 .badge-private { font-family: 'Outfit', sans-serif; background: #f1f5f9; color: #64748b; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block; margin: 2px; min-width: 102px; border: 1px dashed #cbd5e1; text-align: center; }
 
+/* --- LOGOTIPO CORPORATIVO EN EL SIDEBAR --- */
+#sidebarLogoContainer {
+    transition: all 0.3s ease;
+}
+#sidebarLogo {
+    background: #ffffff;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease;
+}
+#sidebarLogo:hover {
+    transform: scale(1.05);
+}
+
 @media (max-width: 992px) { .main-content { padding: 25px; } .form-box, .table-container { padding: 20px; } }
 @media (max-width: 768px) {
     body { flex-direction: column; overflow-y: auto; height: auto; }

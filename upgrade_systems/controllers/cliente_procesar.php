@@ -58,8 +58,41 @@ if ($accion === 'crear_usuario_operativo') {
         exit;
     }
 
-    $base_empresa   = explode('-', $empresa_cod)[0]; 
-    $cod_unico_nodo = $base_empresa . "-" . substr(md5($email), 0, 4);
+    // Obtener la raíz de la empresa (ej: CONS-01 de CONS-01/RNA o CONS-01)
+    $base_empresa = explode('/', $empresa_cod)[0];
+
+    // Mapear el rol a su abreviatura o palabra correspondiente
+    $rol_limpio = strtolower($rol_a_crear);
+    $abreviatura = 'RN';
+    if ($rol_limpio === 'tipo 1') {
+        $abreviatura = 'T1';
+    } elseif ($rol_limpio === 'tipo 2') {
+        $abreviatura = 'T2';
+    } elseif ($rol_limpio === 'tipo 3') {
+        $abreviatura = 'T3';
+    } elseif ($rol_limpio === 'consultor') {
+        $abreviatura = 'Consultor';
+    }
+
+    // Buscar el último código asignado en la BD con ese prefijo (ej: CONS-01/T1%)
+    $prefijo_busqueda = $conexion->real_escape_string($base_empresa . "/" . $abreviatura);
+    $query_ultimo = "SELECT cod FROM empresas_clientes WHERE cod LIKE '$prefijo_busqueda%' ORDER BY cod DESC LIMIT 1";
+    $res_ultimo = $conexion->query($query_ultimo);
+
+    $siguiente_letra = 'A';
+    if ($res_ultimo && $res_ultimo->num_rows > 0) {
+        $row_ultimo = $res_ultimo->fetch_assoc();
+        $ultimo_cod = $row_ultimo['cod'];
+
+        // Extraer la letra de sufijo
+        $offset = strlen($base_empresa) + 1 + strlen($abreviatura); // longitud de BASE + "/" + ABREV
+        $sufijo_letra = substr($ultimo_cod, $offset);
+        if (!empty($sufijo_letra)) {
+            $siguiente_letra = ++$sufijo_letra;
+        }
+    }
+
+    $cod_unico_nodo = $base_empresa . "/" . $abreviatura . $siguiente_letra;
     $pass_encriptada = password_hash($pass, PASSWORD_BCRYPT);
 
     $queryInsert = "INSERT INTO empresas_clientes (cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, pass, activo, rol) 
@@ -121,8 +154,8 @@ if ($accion === 'subir_documento') {
             exit;
         }
 
-        // Obtener código base de la organización (ej: CONS-2b63 -> CONS)
-        $base_empresa = explode('-', $empresa_cod)[0];
+        // Obtener código base de la organización (ej: CONS-01/RNA -> CONS-01)
+        $base_empresa = explode('/', $empresa_cod)[0];
         $base_empresa_limpio = preg_replace('/[^a-zA-Z0-9]/', '', $base_empresa);
         if (empty($base_empresa_limpio)) {
             $base_empresa_limpio = 'GENERAL';
@@ -180,9 +213,9 @@ if ($accion === 'listar_documentos') {
     if ($rol_ejecutor === 'administrador') return;
 
     $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
-    $base_empresa = explode('-', $empresa_cod)[0];
+    $base_empresa = explode('/', $empresa_cod)[0];
 
-    $res = $conexion->query("SELECT id, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, actualizado_por, visto_por, estatus, nombre_archivo_fisico FROM documentos_pc WHERE empresa_cod = '$base_empresa' OR empresa_cod LIKE '$base_empresa-%' ORDER BY id DESC");
+    $res = $conexion->query("SELECT id, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, actualizado_por, visto_por, estatus, nombre_archivo_fisico FROM documentos_pc WHERE empresa_cod = '$base_empresa' OR empresa_cod LIKE '$base_empresa/%' ORDER BY id DESC");
     
     $documentos = [];
     $fecha_actual = date('Y-m-d');
@@ -301,10 +334,10 @@ if ($accion === 'ver_historial_documento') {
 // --- ACCIÓN 6: LISTAR USUARIOS (CORREGIDA PARA EMITIR ALIAS DESDE EMPRESAS_CLIENTES) ---
 if ($accion === 'listar_usuarios') {
     $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
-    $base_empresa = explode('-', $empresa_cod)[0];
+    $base_empresa = explode('/', $empresa_cod)[0];
     
-    // 🚀 Extraemos de la tabla empresas_clientes garantizando los alias para u.rol y u.role
-    $res = $conexion->query("SELECT cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa-%' ORDER BY id DESC");
+    // 🚀 Extraemos de la tabla empresas_clientes filtrando de forma segura por el código base organizacional /
+    $res = $conexion->query("SELECT cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY id DESC");
     $usuarios = [];
     if($res) { while($row = $res->fetch_assoc()) { $usuarios[] = $row; } }
     echo json_encode(["status" => "success", "data" => $usuarios]);
@@ -362,6 +395,26 @@ if ($accion === 'cambiar_contrasena_propia') {
         }
     } else {
         echo json_encode(["status" => "error", "message" => "Cuenta no encontrada."]);
+    }
+    $stmt->close();
+    exit;
+}
+
+// --- ACCIÓN 9: OBTENER LOGO DE LA EMPRESA ---
+if ($accion === 'obtener_logo_empresa') {
+    $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
+    $base_empresa = explode('/', $empresa_cod)[0];
+    
+    $stmt = $conexion->prepare("SELECT logo FROM empresas_clientes WHERE cod = ? LIMIT 1");
+    $stmt->bind_param("s", $base_empresa);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    
+    if ($res && $res->num_rows > 0) {
+        $row = $res->fetch_assoc();
+        echo json_encode(["status" => "success", "logo" => $row['logo']]);
+    } else {
+        echo json_encode(["status" => "error", "message" => "Organización no encontrada."]);
     }
     $stmt->close();
     exit;

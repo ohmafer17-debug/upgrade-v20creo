@@ -21,8 +21,29 @@ let listadoCategoriasDinamicas = ["Programa Interno de PC", "Dictamen Estructura
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById('nombreEmpresa')) document.getElementById('nombreEmpresa').innerText = empresaCod;
     if (document.getElementById('containerMetaUsuario')) document.getElementById('containerMetaUsuario').innerHTML = `Usuario: <strong>${userName}</strong> | Rango: <span class="badge role">${rolActualSesion}</span>`;
-    inyectarFechaHoraActualFormulario(); aplicarRestrictionsMatriz(); cargarUsuariosCliente(); cargarDocumentosCliente(); 
+    inyectarFechaHoraActualFormulario(); aplicarRestrictionsMatriz(); cargarUsuariosCliente(); cargarDocumentosCliente(); cargarLogoEmpresa();
 });
+
+async function cargarLogoEmpresa() {
+    try {
+        const r = await fetch(urlProcesador, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify({ accion: 'obtener_logo_empresa', empresa_cod: empresaCod }) 
+        });
+        const res = await r.json();
+        if (res.status === 'success' && res.logo) {
+            const logoContainer = document.getElementById('sidebarLogoContainer');
+            const logoImg = document.getElementById('sidebarLogo');
+            if (logoContainer && logoImg) {
+                logoImg.src = `${base_url}/public/uploads/logos/${res.logo}`;
+                logoContainer.style.display = 'block';
+            }
+        }
+    } catch (err) {
+        console.error("Error al cargar el logo corporativo:", err);
+    }
+}
 
 function inyectarFechaHoraActualFormulario() {
     const ahora = new Date();

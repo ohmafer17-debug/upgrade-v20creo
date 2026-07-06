@@ -138,24 +138,38 @@ document.getElementById('registroEmpresaForm').addEventListener('submit', async 
         return;
     }
 
-    const payload = { 
-        accion: 'registrar_nueva_empresa', 
-        empresa_nombre: document.getElementById('empresaNombre').value.trim(), 
-        empresa_cod: document.getElementById('empresaCod').value.trim(), 
-        nombre_usuario: document.getElementById('nombreUsuario').value.trim(), 
-        email_usuario: document.getElementById('emailUsuario').value.trim(), 
-        email_adicional: document.getElementById('emailUsuarioAdicional').value.trim(),
-        telefono_principal: document.getElementById('telefonoUsuarioPrincipal').value.trim(),
-        telefono_adicional: document.getElementById('telefonoUsuarioAdicional').value.trim(),
-        direccion: document.getElementById('empresaDireccion').value.trim(),
-        coordenadas: document.getElementById('empresaCoordenadas').value.trim(),
-        rol_inicial: document.getElementById('empresaRolInicial').value, 
-        pass_usuario: pass, 
-        rn_vinculado: document.getElementById('filtroNombresRNSelect').value 
-    };
-    const r = await fetch(urlProcesadorAdmin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const formData = new FormData();
+    formData.append('accion', 'registrar_nueva_empresa');
+    formData.append('empresa_nombre', document.getElementById('empresaNombre').value.trim());
+    formData.append('empresa_cod', document.getElementById('empresaCod').value.trim());
+    formData.append('nombre_usuario', document.getElementById('nombreUsuario').value.trim());
+    formData.append('email_usuario', document.getElementById('emailUsuario').value.trim());
+    formData.append('email_adicional', document.getElementById('emailUsuarioAdicional').value.trim());
+    formData.append('telefono_principal', document.getElementById('telefonoUsuarioPrincipal').value.trim());
+    formData.append('telefono_adicional', document.getElementById('telefonoUsuarioAdicional').value.trim());
+    formData.append('direccion', document.getElementById('empresaDireccion').value.trim());
+    formData.append('coordenadas', document.getElementById('empresaCoordenadas').value.trim());
+    formData.append('rol_inicial', document.getElementById('empresaRolInicial').value);
+    formData.append('pass_usuario', pass);
+    formData.append('rn_vinculado', document.getElementById('filtroNombresRNSelect').value);
+
+    const logoFile = document.getElementById('empresaLogo').files[0];
+    if (logoFile) {
+        formData.append('logo', logoFile);
+    }
+
+    const r = await fetch(urlProcesadorAdmin, { method: 'POST', body: formData });
     const res = await r.json();
-    if (res.status === 'success') { alert(res.message); document.getElementById('registroEmpresaForm').reset(); document.getElementById('wrapperFiltroRN').style.display = "none"; document.getElementById('previewRNBox').style.display = "none"; restablecerRolesFormularioCompleto(); cambiarVistaUps('licencias'); } else { alert(res.message); }
+    if (res.status === 'success') { 
+        alert(res.message); 
+        document.getElementById('registroEmpresaForm').reset(); 
+        document.getElementById('wrapperFiltroRN').style.display = "none"; 
+        document.getElementById('previewRNBox').style.display = "none"; 
+        restablecerRolesFormularioCompleto(); 
+        cambiarVistaUps('licencias'); 
+    } else { 
+        alert(res.message); 
+    }
 });
 
 async function inicializarFiltroEmpresas() {
@@ -178,7 +192,8 @@ async function cargarLicenciasOFiltrarRoles() {
         const t = document.getElementById('tablaLicenciasBody'); t.innerHTML = "";
         res.data.forEach((emp, index) => {
             const esActivo = parseInt(emp.activo) === 1;
-            t.innerHTML += `<tr><td><code>${emp.empresa_cod}</code></td><td><strong>${emp.nombre_comercial}</strong></td><td>${emp.usuario_responsable}</td><td><span class="badge role">${emp.rol}</span></td><td><span class="badge ${esActivo ? 'green' : 'red'}">${esActivo ? 'Activa' : 'Suspendida'}</span></td><td class="actions-cell"><button class="btn-action edit" onclick="prepararEdicionEmpresa(${index})"><i class="fas fa-edit"></i> Editar</button><button class="btn-action suspend" onclick="cambiarEstatusEmpresa('${emp.id}', ${emp.activo})"><i class="fas fa-power-off"></i> ${esActivo ? 'Suspender' : 'Activar'}</button></td></tr>`;
+            const logoHtml = emp.logo ? `<img src="${base_url}/public/uploads/logos/${emp.logo}" class="logo-thumbnail">` : `<i class="fas fa-building" style="color: #94a3b8; font-size: 1.25rem; vertical-align: middle; margin-right: 12px;"></i>`;
+            t.innerHTML += `<tr><td>${logoHtml}<code>${emp.empresa_cod}</code></td><td><strong>${emp.nombre_comercial}</strong></td><td>${emp.usuario_responsable}</td><td><span class="badge role">${emp.rol}</span></td><td><span class="badge ${esActivo ? 'green' : 'red'}">${esActivo ? 'Activa' : 'Suspendida'}</span></td><td class="actions-cell"><button class="btn-action edit" onclick="prepararEdicionEmpresa(${index})"><i class="fas fa-edit"></i> Editar</button><button class="btn-action suspend" onclick="cambiarEstatusEmpresa('${emp.id}', ${emp.activo})"><i class="fas fa-power-off"></i> ${esActivo ? 'Suspender' : 'Activar'}</button></td></tr>`;
         });
     }
 }
@@ -196,11 +211,30 @@ function prepararEdicionEmpresa(index) {
     document.getElementById('editEmpresaCoordenadas').value = emp.coordenadas || '';
     document.getElementById('editEmpresaRol').value = emp.rol || 'Consultor';
     document.getElementById('editEmpresaPass').value = ''; // Vacío por defecto
+    
+    // Vista previa del logo
+    const previewBox = document.getElementById('editLogoPreview');
+    const previewImg = document.getElementById('editLogoImg');
+    const fileInput = document.getElementById('editEmpresaLogo');
+    if (fileInput) fileInput.value = '';
+    
+    if (emp.logo && previewImg && previewBox) {
+        previewImg.src = `${base_url}/public/uploads/logos/${emp.logo}`;
+        previewBox.style.display = 'block';
+    } else if (previewBox) {
+        previewBox.style.display = 'none';
+        previewImg.src = '';
+    }
+
     document.getElementById('box-editar-empresa').style.display = 'block';
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function cancelarEdicionEmpresa() { document.getElementById('box-editar-empresa').style.display = 'none'; }
+function cancelarEdicionEmpresa() { 
+    document.getElementById('box-editar-empresa').style.display = 'none'; 
+    const previewBox = document.getElementById('editLogoPreview');
+    if (previewBox) previewBox.style.display = 'none';
+}
 
 document.getElementById('edicionEmpresaForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -213,23 +247,33 @@ document.getElementById('edicionEmpresaForm').addEventListener('submit', async f
         }
     }
 
-    const payload = {
-        accion: 'editar_empresa_cliente',
-        id: document.getElementById('editEmpresaId').value,
-        nombre: document.getElementById('editEmpresaNombre').value.trim(),
-        email: document.getElementById('editEmpresaEmail').value.trim(),
-        email_adicional: document.getElementById('editEmpresaEmailAdicional').value.trim(),
-        telefono_principal: document.getElementById('editEmpresaTelPrincipal').value.trim(),
-        telefono_adicional: document.getElementById('editEmpresaTelAdicional').value.trim(),
-        direccion: document.getElementById('editEmpresaDireccion').value.trim(),
-        coordenadas: document.getElementById('editEmpresaCoordenadas').value.trim(),
-        rol: document.getElementById('editEmpresaRol').value,
-        pass: pass
-    };
+    const formData = new FormData();
+    formData.append('accion', 'editar_empresa_cliente');
+    formData.append('id', document.getElementById('editEmpresaId').value);
+    formData.append('nombre', document.getElementById('editEmpresaNombre').value.trim());
+    formData.append('email', document.getElementById('editEmpresaEmail').value.trim());
+    formData.append('email_adicional', document.getElementById('editEmpresaEmailAdicional').value.trim());
+    formData.append('telefono_principal', document.getElementById('editEmpresaTelPrincipal').value.trim());
+    formData.append('telefono_adicional', document.getElementById('editEmpresaTelAdicional').value.trim());
+    formData.append('direccion', document.getElementById('editEmpresaDireccion').value.trim());
+    formData.append('coordenadas', document.getElementById('editEmpresaCoordenadas').value.trim());
+    formData.append('rol', document.getElementById('editEmpresaRol').value);
+    formData.append('pass', pass);
 
-    const r = await fetch(urlProcesadorAdmin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const logoFile = document.getElementById('editEmpresaLogo').files[0];
+    if (logoFile) {
+        formData.append('logo', logoFile);
+    }
+
+    const r = await fetch(urlProcesadorAdmin, { method: 'POST', body: formData });
     const res = await r.json();
-    if (res.status === 'success') { alert(res.message); cancelarEdicionEmpresa(); cargarLicenciasOFiltrarRoles(); } else { alert(res.message); }
+    if (res.status === 'success') { 
+        alert(res.message); 
+        cancelarEdicionEmpresa(); 
+        cargarLicenciasOFiltrarRoles(); 
+    } else { 
+        alert(res.message); 
+    }
 });
 
 async function cambiarEstatusEmpresa(id, estatusActual) {
