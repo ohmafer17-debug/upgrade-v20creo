@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upgrade Systems | Acceso Corporativo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="brand-header">
+            <div class="logo-icon"><i class="fas fa-shield-halved"></i></div>
+            <h2>Iniciar Sesión</h2>
+            <p>Portal Corporativo de Licencias</p>
+        </div>
+        
+        <div id="alertBox" class="alert-danger"></div>
+
+        <form id="formLoginGlobal">
+            <div class="input-group">
+                <label>Correo Electrónico</label>
+                <input type="email" id="loginEmail" placeholder="ejemplo@empresa.com" required>
+            </div>
+            
+            <div class="input-group">
+                <label>Contraseña de Acceso</label>
+                <input type="password" id="loginPass" placeholder="••••••••" required>
+            </div>
+            
+            <button type="submit" id="btnSubmitLogin">Ingresar al Sistema</button>
+            <a href="#" onclick="abrirModalRecuperar(event)" style="display:block; text-align:center; margin-top:15px; color:var(--accent-blue); text-decoration:none; font-size:0.85rem; font-weight:600;">¿Olvidaste tu contraseña?</a>
+        </form>
+    </div>
+
+    <!-- MODAL DE RECUPERACIÓN DE CONTRASEÑA -->
+    <div id="modalRecuperar" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close" onclick="cerrarModalRecuperar()"><i class="fas fa-times"></i></button>
+            <div class="modal-header">
+                <h3>Recuperar Contraseña</h3>
+                <p>Sigue las instrucciones para restablecer tu cuenta corporativa.</p>
+            </div>
+            
+            <div id="alertBoxRecuperar" class="alert-danger" style="margin-bottom: 15px;"></div>
+
+            <!-- PASO 1: Pedir Correo -->
+            <div id="step-1" class="recuperar-step activo">
+                <div class="input-group">
+                    <label>Correo Electrónico Principal</label>
+                    <input type="email" id="recEmail" placeholder="ejemplo@empresa.com" required>
+                </div>
+                <br>
+                <button type="button" onclick="solicitarCodigoRecuperacion()">Enviar Código</button>
+            </div>
+
+            <!-- PASO 2: Pedir Código -->
+            <div id="step-2" class="recuperar-step">
+                <div class="input-group">
+                    <label>Código de Validación (6 dígitos)</label>
+                    <input type="text" id="recCodigo" maxlength="6" placeholder="123456" required style="font-family: monospace; font-size: 1.2rem; text-align: center; letter-spacing: 0.5em;">
+                </div>
+                <br>
+                <button type="button" onclick="validarCodigoRecuperacion()">Verificar Código</button>
+            </div>
+
+            <!-- PASO 3: Definir Nueva Contraseña -->
+            <div id="step-3" class="recuperar-step">
+                <div class="input-group">
+                    <label>Nueva Contraseña</label>
+                    <input type="password" id="recNuevaPass" placeholder="Mínimo 10 caracteres con complejidad" required>
+                </div>
+                <div class="input-group">
+                    <label>Confirmar Nueva Contraseña</label>
+                    <input type="password" id="recNuevaPassConf" placeholder="Repite la nueva contraseña" required>
+                </div>
+                <br>
+                <button type="button" onclick="guardarNuevaContrasena()">Restablecer Contraseña</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/login.js"></script>
+</body>
+</html>
