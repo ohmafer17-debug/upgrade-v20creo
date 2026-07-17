@@ -1,0 +1,31 @@
+=== EDICIÓN EMPRESA ===
+FECHA: 2026-06-27 05:18:59
+POST: Array
+(
+    [accion] => editar_empresa_cliente
+    [id] => 5
+    [nombre] => Consultoría Alfa
+    [email] => alvaro@principal.com
+    [email_adicional] => alvaro@secundario.com
+    [telefono_principal] => 1478523690
+    [telefono_adicional] => 1478523690
+    [direccion] => Alamo norte 113, 0
+    [coordenadas] => 19.3061712,-99.5949204
+    [rol] => Consultor
+    [pass] => 
+)
+
+FILES: Array
+(
+    [logo] => Array
+        (
+            [name] => Imagen de WhatsApp 2025-09-11 a las 21.54.24_3008ae33.jpg
+            [type] => image/jpeg
+            [tmp_name] => C:\xampp\tmp\phpF86E.tmp
+            [error] => 0
+            [size] => 116421
+        )
+
+)
+
+
