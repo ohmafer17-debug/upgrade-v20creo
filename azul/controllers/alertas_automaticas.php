@@ -105,6 +105,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
                     $mensaje .= "Atentamente,\nUpgrade Systems";
 
                     $cabeceras = "From: no-reply@upgradesystems.com\r\n";
+                    $cabeceras .= "Content-Type: text/plain; charset=UTF-8\r\n";
                     $cabeceras .= "X-Mailer: PHP/" . phpversion();
 
                     // Envío de correo
@@ -141,6 +142,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
                         $mensaje_adicional .= "Atentamente,\nUpgrade Systems";
 
                         $cabeceras_adicional = "From: no-reply@upgradesystems.com\r\n";
+                        $cabeceras_adicional .= "Content-Type: text/plain; charset=UTF-8\r\n";
                         $cabeceras_adicional .= "X-Mailer: PHP/" . phpversion();
 
                         mail($c_adicional, $asunto_adicional, $mensaje_adicional, $cabeceras_adicional);
@@ -151,7 +153,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
             // Envío al contacto directo de la empresa exactamente un día antes del vencimiento
             $es_un_dia_antes = (round($dias_para_vencer) == 1);
             if ($es_un_dia_antes) {
-                $queryDirecto = "SELECT nombre, email FROM empresas_clientes WHERE cod = ?";
+                $queryDirecto = "SELECT nombre, email, director_email FROM empresas_clientes WHERE cod = ?";
                 $stmtDirecto = $conexion->prepare($queryDirecto);
                 $stmtDirecto->bind_param("s", $cod_empresa);
                 $stmtDirecto->execute();
@@ -159,6 +161,9 @@ if ($resDocs && $resDocs->num_rows > 0) {
                 if ($resDirecto && $resDirecto->num_rows > 0) {
                     $rowDirecto = $resDirecto->fetch_assoc();
                     $para_dir = $rowDirecto['email'];
+                    if (!empty($rowDirecto['director_email'])) {
+                        $para_dir .= ", " . $rowDirecto['director_email'];
+                    }
                     $asunto_dir = "🚨 AVISO CRÍTICO: SU DOCUMENTO VENCE MAÑANA - UPGRADE SYSTEMS";
                     
                     $mensaje_dir = "Estimado/a " . $rowDirecto['nombre'] . " (Contacto Directo),\n\n";
@@ -170,6 +175,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
                     $mensaje_dir .= "Atentamente,\nUpgrade Systems";
 
                     $cabeceras_dir = "From: no-reply@upgradesystems.com\r\n";
+                    $cabeceras_dir .= "Content-Type: text/plain; charset=UTF-8\r\n";
                     $cabeceras_dir .= "X-Mailer: PHP/" . phpversion();
 
                     mail($para_dir, $asunto_dir, $mensaje_dir, $cabeceras_dir);
@@ -194,6 +200,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
                         $mensaje_adm .= "Atentamente,\nUpgrade Systems";
 
                         $cabeceras_adm = "From: no-reply@upgradesystems.com\r\n";
+                        $cabeceras_adm .= "Content-Type: text/plain; charset=UTF-8\r\n";
                         $cabeceras_adm .= "X-Mailer: PHP/" . phpversion();
 
                         mail($para_adm, $asunto_adm, $mensaje_adm, $cabeceras_adm);

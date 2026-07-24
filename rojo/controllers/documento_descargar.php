@@ -16,13 +16,15 @@ if (empty($archivo)) {
     die("Error: Parámetro de archivo ausente.");
 }
 
-// 🔐 VALIDACIÓN DE SEGURIDAD: Solo permitimos la descarga si viene un token seguro (empresaCod)
-// Esto evita que alguien escriba la URL a mano sin haber pasado por el portal
-if (!isset($_GET['token_seguro']) || empty($_GET['token_seguro'])) {
+// 🔐 VALIDACIÓN DE SEGURIDAD CRÍTICA: Impedir descargas fuera de la sesión activa en el navegador
+if (!isset($_SESSION['sesion_activa']) || $_SESSION['sesion_activa'] !== true || !isset($_SESSION['usuario_cod'])) {
     header("HTTP/1.1 403 Forbidden");
     echo "<h1>Acceso Denegado: No tienes una sesión activa en este navegador.</h1>";
     exit;
 }
+
+$sesion_usuario_cod = $_SESSION['usuario_cod'];
+$sesion_usuario_rol = isset($_SESSION['usuario_rol']) ? strtolower($_SESSION['usuario_rol']) : '';
 
 // Sanitización para evitar que alguien intente salir de la carpeta (navegación de directorios)
 $archivo_limpio = basename($archivo);
@@ -52,6 +54,18 @@ if ($result && $result->num_rows > 0) {
     }
 }
 
+// Validar que el usuario tenga acceso a esta empresa_cod
+if ($sesion_usuario_cod !== 'UPS-STAFF') {
+    $base_sesion = explode('/', $sesion_usuario_cod)[0];
+    $base_documento = explode('/', $empresa_cod)[0];
+    
+    if (strcasecmp($base_sesion, $base_documento) !== 0) {
+        header("HTTP/1.1 403 Forbidden");
+        echo "<h1>Acceso Denegado: No estás autorizado para visualizar este expediente.</h1>";
+        exit;
+    }
+}
+
 // Calcular el código base
 $base_empresa = explode('/', $empresa_cod)[0];
 $base_empresa_limpio = preg_replace('/[^a-zA-Z0-9]/', '', $base_empresa);
@@ -62,10 +76,15 @@ if (empty($base_empresa_limpio)) {
 // Ruta absoluta respecto al directorio del script
 $ruta_completa = __DIR__ . "/../uploads_dictamenes/" . $base_empresa_limpio . "/" . $archivo_limpio;
 
-// Verificamos que el archivo exista físicamente
+// Verificamos si existe en la subcarpeta; si no, buscamos en la carpeta raíz de subidas
 if (!file_exists($ruta_completa)) {
-    header("HTTP/1.1 404 Not Found");
-    die("El expediente solicitado no existe físicamente en el servidor.");
+    $ruta_alternativa = __DIR__ . "/../uploads_dictamenes/" . $archivo_limpio;
+    if (file_exists($ruta_alternativa)) {
+        $ruta_completa = $ruta_alternativa;
+    } else {
+        header("HTTP/1.1 404 Not Found");
+        die("El expediente solicitado no existe físicamente en el servidor.");
+    }
 }
 
 // Detectamos el tipo de archivo para enviarlo correctamente

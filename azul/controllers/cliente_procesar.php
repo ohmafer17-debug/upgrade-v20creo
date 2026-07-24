@@ -68,6 +68,12 @@ if ($accion === 'crear_usuario_operativo') {
     $coordenadas        = isset($_POST['coordenadas']) ? trim($_POST['coordenadas']) : (isset($datos['coordenadas']) ? trim($datos['coordenadas']) : '');
     $coordenadas        = $conexion->real_escape_string($coordenadas);
 
+    $encargado          = isset($_POST['encargado']) ? trim($_POST['encargado']) : (isset($datos['encargado']) ? trim($datos['encargado']) : '');
+    $encargado          = $conexion->real_escape_string($encargado);
+
+    $director_email     = isset($_POST['director_email']) ? trim($_POST['director_email']) : (isset($datos['director_email']) ? trim($datos['director_email']) : '');
+    $director_email     = $conexion->real_escape_string($director_email);
+
     if (empty($nombre) || empty($rol_a_crear) || empty($email) || empty($pass) || empty($empresa_cod)) {
         echo json_encode(["status" => "error", "message" => "Existen campos mandatorios incompletos."]);
         exit;
@@ -160,8 +166,10 @@ if ($accion === 'crear_usuario_operativo') {
     $pass_encriptada = password_hash($pass, PASSWORD_BCRYPT);
 
     $logo_val = $logo_nombre_fisico ? "'$logo_nombre_fisico'" : "NULL";
-    $queryInsert = "INSERT INTO empresas_clientes (cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, logo, pass, activo, rol) 
-                    VALUES ('$cod_unico_nodo', '$nombre', '$email', '$email_adicional', '$telefono_principal', '$telefono_adicional', '$direccion', '$coordenadas', $logo_val, '$pass_encriptada', 1, '$rol_a_crear')";
+    $encargado_val = !empty($encargado) ? "'$encargado'" : "NULL";
+    $director_email_val = !empty($director_email) ? "'$director_email'" : "NULL";
+    $queryInsert = "INSERT INTO empresas_clientes (cod, nombre, encargado, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, logo, pass, activo, rol, director_email) 
+                    VALUES ('$cod_unico_nodo', '$nombre', $encargado_val, '$email', '$email_adicional', '$telefono_principal', '$telefono_adicional', '$direccion', '$coordenadas', $logo_val, '$pass_encriptada', 1, '$rol_a_crear', $director_email_val)";
 
     if ($conexion->query($queryInsert)) {
         echo json_encode(["status" => "success"]);
@@ -274,6 +282,22 @@ if ($accion === 'subir_documento') {
     exit;
 }
 
+// --- ACCIÓN 2.5: LISTAR MIS NODOS (SUCURSALES Y PROPIA EMPRESA) ---
+if ($accion === 'listar_mis_nodos') {
+    $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
+    $base_empresa = explode('/', $empresa_cod)[0];
+
+    $res = $conexion->query("SELECT cod, nombre FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY cod ASC");
+    $nodos = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $nodos[] = $row;
+        }
+    }
+    echo json_encode(["status" => "success", "data" => $nodos]);
+    exit;
+}
+
 // --- ACCIÓN 3: LISTAR DOCUMENTOS ---
 if ($accion === 'listar_documentos') {
     $rol_ejecutor = strtolower(trim($datos['rol_ejecutor']));
@@ -282,7 +306,7 @@ if ($accion === 'listar_documentos') {
     $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
     $base_empresa = explode('/', $empresa_cod)[0];
 
-    $res = $conexion->query("SELECT id, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, actualizado_por, visto_por, estatus, nombre_archivo_fisico, notificar_correos FROM documentos_pc WHERE empresa_cod = '$base_empresa' OR empresa_cod LIKE '$base_empresa/%' ORDER BY id DESC");
+    $res = $conexion->query("SELECT id, empresa_cod, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, actualizado_por, visto_por, estatus, nombre_archivo_fisico, notificar_correos FROM documentos_pc WHERE empresa_cod = '$base_empresa' OR empresa_cod LIKE '$base_empresa/%' ORDER BY id DESC");
     
     $documentos = [];
     $fecha_actual = date('Y-m-d');
@@ -352,8 +376,12 @@ if ($accion === 'listar_documentos') {
             if (in_array(strtolower($rol_ejecutor), $roles_notificados) && $color_semaforo !== 'green') {
                 $para = "responsable_infraestructura@upgradesystems.com";
                 $asunto = "🚨 ALERTA AUTOMÁTICA DE VENCIMIENTO - " . strtoupper($row['tipo_doc']);
-                $mensaje = "Estimado Equipo, se notifica que el documento " . $row['tipo_doc'] . " (" . $row['nombre_limpio'] . ") ha entrado en la fase " . $mensaje_estatus . " con un " . $row['porcentaje_vida'] . " de tiempo consumido. Requiere revisión inmediata en el sistema.";
-                $cabeceras = "From: no-reply@upgradesystems.com\r\nReply-To: no-reply@upgradesystems.com\r\nX-Mailer: PHP/" . phpversion();
+                $mensaje = "Estimado Equipo,\n\n";
+                $mensaje .= "Se notifica que el documento " . $row['tipo_doc'] . " (" . $row['nombre_limpio'] . ") ha entrado en la fase " . $mensaje_estatus . " con un " . $row['porcentaje_vida'] . " de tiempo consumido.\n\n";
+                $mensaje .= "Requiere revisión inmediata en el sistema.\n\n";
+                $mensaje .= "Atentamente,\nUpgrade Systems";
+
+                $cabeceras = "From: no-reply@upgradesystems.com\r\nReply-To: no-reply@upgradesystems.com\r\nContent-Type: text/plain; charset=UTF-8\r\nX-Mailer: PHP/" . phpversion();
                 mail($para, $asunto, $mensaje, $cabeceras);
             }
 
@@ -405,7 +433,7 @@ if ($accion === 'listar_usuarios') {
     $base_empresa = explode('/', $empresa_cod)[0];
     
     // 🚀 Extraemos de la tabla empresas_clientes filtrando de forma segura por el código base organizacional /
-    $res = $conexion->query("SELECT cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY id DESC");
+    $res = $conexion->query("SELECT cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY id DESC");
     $usuarios = [];
     if($res) { while($row = $res->fetch_assoc()) { $usuarios[] = $row; } }
     echo json_encode(["status" => "success", "data" => $usuarios]);

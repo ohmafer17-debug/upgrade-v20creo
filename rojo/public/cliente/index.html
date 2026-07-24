@@ -44,7 +44,8 @@
         <ul class="menu-items">
             <li id="menu-resumen" class="active" onclick="cambiarVista('resumen')"><a><i class="fas fa-house"></i> Inicio</a></li>
             <li id="menu-archivos" onclick="cambiarVista('archivos')"><a><i class="fas fa-file-shield"></i> Control de Expediente</a></li>
-            <li id="menu-personal" onclick="cambiarVista('personal')"><a><i class="fas fa-building-circle-check"></i> Estructura Interna</a></li>
+            <li id="menu-personal" onclick="cambiarVista('personal')"><a><i class="fas fa-building-circle-check"></i> Registrar Empresas</a></li>
+            <li id="menu-colaboradores" onclick="cambiarVista('colaboradores')"><a><i class="fas fa-users-gear"></i> Estructura Interna</a></li>
             <li id="menu-password" onclick="cambiarVista('password')"><a><i class="fas fa-key"></i> Cambiar Contraseña</a></li>
         </ul>
         <ul class="menu-items" style="margin-top: auto;">
@@ -94,6 +95,12 @@
                         <input type="hidden" id="esActualizacion" value="no">
                         <input type="hidden" id="docMotivo" value="">
                         <div class="form-grid">
+                            <div class="form-group full" id="wrapperSeleccionarEmpresaDoc" style="display: none;">
+                                <label>Asignar Documento a Empresa / Sucursal</label>
+                                <select id="docEmpresaSelect" style="width: 100%; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; font-family: 'Outfit', sans-serif;">
+                                    <!-- Se cargará dinámicamente -->
+                                </select>
+                            </div>
                             <div class="form-group">
                                 <label>Categoría del Documento</label>
                                 <input type="text" id="docTipo" placeholder="Ej: Dictamen Estructural" required style="width: 100%; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; font-family: 'Outfit', sans-serif;">
@@ -147,6 +154,7 @@
                             <tr class="sortable-headers">
                                 <th onclick="ordenarDocumentos('color')" style="cursor:pointer; user-select:none; white-space:nowrap;">Estado <i class="fas fa-sort" style="font-size:0.8rem; margin-left:4px; opacity:0.6;"></i></th>
                                 <th onclick="ordenarDocumentos('categoria')" style="cursor:pointer; user-select:none; white-space:nowrap;">Categoría <i class="fas fa-sort" style="font-size:0.8rem; margin-left:4px; opacity:0.6;"></i></th>
+                                <th onclick="ordenarDocumentos('empresa')" style="cursor:pointer; user-select:none; white-space:nowrap;">Empresa / Sucursal <i class="fas fa-sort" style="font-size:0.8rem; margin-left:4px; opacity:0.6;"></i></th>
                                 <th onclick="ordenarDocumentos('nombre')" style="cursor:pointer; user-select:none; white-space:nowrap;">Nombre Documento <i class="fas fa-sort" style="font-size:0.8rem; margin-left:4px; opacity:0.6;"></i></th>
                                 <th onclick="ordenarDocumentos('vencimiento')" style="cursor:pointer; user-select:none;">Vencimiento / Registro / Trazabilidad <i class="fas fa-sort" style="font-size:0.8rem; margin-left:4px; opacity:0.6;"></i></th>
                                 <th onclick="ordenarDocumentos('estatus')" style="cursor:pointer; user-select:none; white-space:nowrap;">Estatus <i class="fas fa-sort" style="font-size:0.8rem; margin-left:4px; opacity:0.6;"></i></th>
@@ -166,8 +174,9 @@
                 <div id="boxFormPersonal">
                     <form id="usuarioClienteForm">
                         <div class="form-grid">
-                            <div class="form-group"><label>Nombre Completo del Encargado</label><input type="text" id="userNombre" required placeholder="Ej: Ing. Carlos Pérez"></div>
-                            <div class="form-group"><label>Rango Organizacional a Asignar</label><select id="userRol" required></select></div>
+                            <div class="form-group"><label id="lblUserNombre">Nombre Completo del Encargado</label><input type="text" id="userNombre" required placeholder="Ej: Ing. Carlos Pérez"></div>
+                            <div class="form-group" id="wrapperUserEncargado" style="display: none;"><label>Nombre Completo del Encargado</label><input type="text" id="userEncargado" placeholder="Ej: Ing. Carlos Pérez"></div>
+                            <div class="form-group" id="wrapperUserRol"><label>Rango Organizacional a Asignar</label><select id="userRol" required></select></div>
                             <div class="form-group"><label>Correo Electrónico Principal</label><input type="email" id="userEmail" required placeholder="correo.principal@empresa.com"></div>
                             <div class="form-group"><label>Correo Electrónico Adicional (Opcional)</label><input type="email" id="userEmailPersonal" placeholder="correo.adicional@gmail.com"></div>
                             <div class="form-group"><label>Teléfono Principal</label><input type="tel" id="userTelEmpresa" required placeholder="10 dígitos"></div>
@@ -178,6 +187,10 @@
                             <div id="wrapperCamposEmpresa" style="display: none; grid-column: span 2; margin: 0; padding: 0;">
                                 <div class="form-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%;">
                                     <div class="form-group full" style="grid-column: span 2; margin-top: 15px;">
+                                        <label>Correo Electrónico del Director de la Empresa / Sucursal</label>
+                                        <input type="email" id="empresaDirectorEmail" placeholder="director@empresa.com">
+                                    </div>
+                                    <div class="form-group full" style="grid-column: span 2;">
                                         <label>Dirección Física de la Empresa / Sucursal</label>
                                         <input type="text" id="empresaDireccion" placeholder="Calle, Número, Colonia, Ciudad, Estado">
                                     </div>
@@ -194,6 +207,58 @@
                             </div>
                         </div>
                         <br><button type="submit" class="btn-submit" style="background:var(--accent-green);"><i class="fas fa-user-plus"></i> Desplegar Nodo de Estructura</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="vista-colaboradores" class="vista-seccion">
+            <div class="form-box">
+                <h2><i class="fas fa-users-gear" style="color:var(--sidebar-active);"></i> Registrar Personal / Colaboradores</h2>
+                <div id="boxFormColaboradores">
+                    <form id="colaboradorForm">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Nombre Completo del Colaborador</label>
+                                <input type="text" id="colabNombre" required placeholder="Ej: Ing. Carlos Pérez">
+                            </div>
+                            <div class="form-group">
+                                <label>Rango Organizacional a Asignar</label>
+                                <select id="colabRol" required>
+                                    <option value="Responsable Nacional">Responsable Nacional</option>
+                                    <option value="Tipo 1">Tipo 1</option>
+                                    <option value="Tipo 2">Tipo 2</option>
+                                    <option value="Tipo 3">Tipo 3</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Correo Electrónico Principal</label>
+                                <input type="email" id="colabEmail" required placeholder="correo.principal@empresa.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Correo Electrónico Adicional (Opcional)</label>
+                                <input type="email" id="colabEmailPersonal" placeholder="correo.adicional@gmail.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono Principal</label>
+                                <input type="tel" id="colabTelEmpresa" required placeholder="10 dígitos">
+                            </div>
+                            <div class="form-group">
+                                <label>Teléfono Adicional (Opcional)</label>
+                                <input type="tel" id="colabTelPersonal" placeholder="10 dígitos">
+                            </div>
+                            <div class="form-group full">
+                                <label>Contraseña Asignada</label>
+                                <input type="password" id="colabPass" required placeholder="Mínimo 10 caracteres con complejidad">
+                            </div>
+                            <div class="form-group full" id="wrapperAsignarEmpresaColab" style="display: none;">
+                                <label>Asignar a Empresa / Sucursal</label>
+                                <select id="colabEmpresaSelect" style="width: 100%; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; font-family: 'Outfit', sans-serif;">
+                                    <!-- Se cargará dinámicamente con las empresas/sucursales -->
+                                </select>
+                            </div>
+                        </div>
+                        <br><button type="submit" class="btn-submit" style="background:var(--sidebar-active);"><i class="fas fa-user-plus"></i> Registrar Colaborador</button>
                     </form>
                 </div>
             </div>
@@ -253,6 +318,6 @@
         </div>
     </div>
 
-    <script src="js/index.js"></script>
+    <script src="js/index.js?v=3"></script>
 </body>
 </html>

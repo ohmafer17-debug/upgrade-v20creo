@@ -17,6 +17,12 @@ header("Content-Type: application/json; charset=UTF-8");
 // 🚀 CORRECCIÓN DE RUTA: Salir de controllers/ y entrar a config/ para enlazar la base de datos
 require_once __DIR__ . "/../config/conexion.php";
 
+// Migración silenciosa de columna para correos adicionales de notificación
+$checkCol = $conexion->query("SHOW COLUMNS FROM documentos_pc LIKE 'notificar_correos'");
+if ($checkCol && $checkCol->num_rows === 0) {
+    $conexion->query("ALTER TABLE documentos_pc ADD COLUMN notificar_correos TEXT DEFAULT NULL;");
+}
+
 $inputRaw = file_get_contents("php://input");
 $datos = json_decode($inputRaw, true);
 
@@ -24,21 +30,49 @@ $accion = isset($_POST['accion']) ? $_POST['accion'] : (isset($datos['accion']) 
 
 // --- ACCIÓN 1: CREAR NODO OPERATIVO ---
 if ($accion === 'crear_usuario_operativo') {
-    $rol_ejecutor = strtolower(trim($datos['rol_ejecutor']));
+    $rol_ejecutor = isset($_POST['rol_ejecutor']) ? trim($_POST['rol_ejecutor']) : (isset($datos['rol_ejecutor']) ? trim($datos['rol_ejecutor']) : '');
+    $rol_ejecutor = strtolower($rol_ejecutor);
     
     if ($rol_ejecutor !== 'administrador' && $rol_ejecutor !== 'consultor' && $rol_ejecutor !== 'responsable nacional' && $rol_ejecutor !== 'responsable_nacional' && $rol_ejecutor !== 'tipo 1') {
         echo json_encode(["status" => "error", "message" => "Denegado: Su rango operativo no posee permisos para crear nodos de estructura."]);
         exit;
     }
 
-    $nombre             = $conexion->real_escape_string(trim($datos['nombre']));
-    $rol_a_crear        = $conexion->real_escape_string(trim($datos['rol']));
-    $email              = $conexion->real_escape_string(trim($datos['email']));
-    $email_adicional    = $conexion->real_escape_string(trim($datos['email_adicional']));
-    $telefono_principal = $conexion->real_escape_string(trim($datos['telefono_principal']));
-    $telefono_adicional = $conexion->real_escape_string(trim($datos['telefono_adicional']));
-    $pass               = $conexion->real_escape_string(trim($datos['pass']));
-    $empresa_cod        = $conexion->real_escape_string(trim($datos['empresa_cod']));
+    $nombre             = isset($_POST['nombre']) ? trim($_POST['nombre']) : (isset($datos['nombre']) ? trim($datos['nombre']) : '');
+    $nombre             = $conexion->real_escape_string($nombre);
+    
+    $rol_a_crear        = isset($_POST['rol']) ? trim($_POST['rol']) : (isset($datos['rol']) ? trim($datos['rol']) : '');
+    $rol_a_crear        = $conexion->real_escape_string($rol_a_crear);
+    
+    $email              = isset($_POST['email']) ? trim($_POST['email']) : (isset($datos['email']) ? trim($datos['email']) : '');
+    $email              = $conexion->real_escape_string($email);
+    
+    $email_adicional    = isset($_POST['email_adicional']) ? trim($_POST['email_adicional']) : (isset($datos['email_adicional']) ? trim($datos['email_adicional']) : '');
+    $email_adicional    = $conexion->real_escape_string($email_adicional);
+    
+    $telefono_principal = isset($_POST['telefono_principal']) ? trim($_POST['telefono_principal']) : (isset($datos['telefono_principal']) ? trim($datos['telefono_principal']) : '');
+    $telefono_principal = $conexion->real_escape_string($telefono_principal);
+    
+    $telefono_adicional = isset($_POST['telefono_adicional']) ? trim($_POST['telefono_adicional']) : (isset($datos['telefono_adicional']) ? trim($datos['telefono_adicional']) : '');
+    $telefono_adicional = $conexion->real_escape_string($telefono_adicional);
+    
+    $pass               = isset($_POST['pass']) ? trim($_POST['pass']) : (isset($datos['pass']) ? trim($datos['pass']) : '');
+    $pass               = $conexion->real_escape_string($pass);
+    
+    $empresa_cod        = isset($_POST['empresa_cod']) ? trim($_POST['empresa_cod']) : (isset($datos['empresa_cod']) ? trim($datos['empresa_cod']) : '');
+    $empresa_cod        = $conexion->real_escape_string($empresa_cod);
+
+    $direccion          = isset($_POST['direccion']) ? trim($_POST['direccion']) : (isset($datos['direccion']) ? trim($datos['direccion']) : '');
+    $direccion          = $conexion->real_escape_string($direccion);
+
+    $coordenadas        = isset($_POST['coordenadas']) ? trim($_POST['coordenadas']) : (isset($datos['coordenadas']) ? trim($datos['coordenadas']) : '');
+    $coordenadas        = $conexion->real_escape_string($coordenadas);
+
+    $encargado          = isset($_POST['encargado']) ? trim($_POST['encargado']) : (isset($datos['encargado']) ? trim($datos['encargado']) : '');
+    $encargado          = $conexion->real_escape_string($encargado);
+
+    $director_email     = isset($_POST['director_email']) ? trim($_POST['director_email']) : (isset($datos['director_email']) ? trim($datos['director_email']) : '');
+    $director_email     = $conexion->real_escape_string($director_email);
 
     if (empty($nombre) || empty($rol_a_crear) || empty($email) || empty($pass) || empty($empresa_cod)) {
         echo json_encode(["status" => "error", "message" => "Existen campos mandatorios incompletos."]);
@@ -56,6 +90,42 @@ if ($accion === 'crear_usuario_operativo') {
     if($check && $check->num_rows > 0) {
         echo json_encode(["status" => "error", "message" => "El correo electrónico ya pertenece a un nodo registrado."]);
         exit;
+    }
+
+    // Procesar logotipo si se sube
+    $logo_nombre_fisico = null;
+    if (isset($_FILES['logo']) && $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['logo']['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(["status" => "error", "message" => "Error PHP al subir logotipo (Código: " . $_FILES['logo']['error'] . ")."]);
+            exit;
+        }
+        
+        $fileTmpPath = $_FILES['logo']['tmp_name'];
+        $fileName    = $_FILES['logo']['name'];
+        $fileSize    = $_FILES['logo']['size'];
+        
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $allowed_exts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+        
+        if (in_array($ext, $allowed_exts)) {
+            if ($fileSize <= 5242880) { // 5MB max
+                $logo_dir = __DIR__ . "/../public/uploads/logos/";
+                if (!is_dir($logo_dir)) {
+                    mkdir($logo_dir, 0777, true);
+                }
+                $logo_nombre_fisico = md5(time() . $fileName) . "." . $ext;
+                if (!move_uploaded_file($fileTmpPath, $logo_dir . $logo_nombre_fisico)) {
+                    echo json_encode(["status" => "error", "message" => "Error al guardar la imagen del logotipo en el servidor."]);
+                    exit;
+                }
+            } else {
+                echo json_encode(["status" => "error", "message" => "El logotipo supera el tamaño de 5MB permitido."]);
+                exit;
+            }
+        } else {
+            echo json_encode(["status" => "error", "message" => "Formato de logotipo no válido. Solo se admiten PNG, JPG, JPEG, GIF o WEBP."]);
+            exit;
+        }
     }
 
     // Obtener la raíz de la empresa (ej: CONS-01 de CONS-01/RNA o CONS-01)
@@ -95,8 +165,11 @@ if ($accion === 'crear_usuario_operativo') {
     $cod_unico_nodo = $base_empresa . "/" . $abreviatura . $siguiente_letra;
     $pass_encriptada = password_hash($pass, PASSWORD_BCRYPT);
 
-    $queryInsert = "INSERT INTO empresas_clientes (cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, pass, activo, rol) 
-                    VALUES ('$cod_unico_nodo', '$nombre', '$email', '$email_adicional', '$telefono_principal', '$telefono_adicional', '$pass_encriptada', 1, '$rol_a_crear')";
+    $logo_val = $logo_nombre_fisico ? "'$logo_nombre_fisico'" : "NULL";
+    $encargado_val = !empty($encargado) ? "'$encargado'" : "NULL";
+    $director_email_val = !empty($director_email) ? "'$director_email'" : "NULL";
+    $queryInsert = "INSERT INTO empresas_clientes (cod, nombre, encargado, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, logo, pass, activo, rol, director_email) 
+                    VALUES ('$cod_unico_nodo', '$nombre', $encargado_val, '$email', '$email_adicional', '$telefono_principal', '$telefono_adicional', '$direccion', '$coordenadas', $logo_val, '$pass_encriptada', 1, '$rol_a_crear', $director_email_val)";
 
     if ($conexion->query($queryInsert)) {
         echo json_encode(["status" => "success"]);
@@ -125,6 +198,7 @@ if ($accion === 'subir_documento') {
     $tipo_doc    = $conexion->real_escape_string(trim($_POST['tipo_doc']));
     $nombre_p    = $conexion->real_escape_string(trim($_POST['nombre_personalizado']));
     $motivo      = isset($_POST['motivo']) ? $conexion->real_escape_string(trim($_POST['motivo'])) : '';
+    $notificar_correos = isset($_POST['notificar_correos']) ? $conexion->real_escape_string(trim($_POST['notificar_correos'])) : '';
     
     $vencimiento = isset($_POST['fecha_vencimiento']) ? trim($_POST['fecha_vencimiento']) : '';
     $vencimiento_sql = empty($vencimiento) ? "'0000-00-00'" : "'" . $conexion->real_escape_string($vencimiento) . "'";
@@ -184,16 +258,15 @@ if ($accion === 'subir_documento') {
                     
                     $vAutor = !empty($docViejo['actualizado_por']) ? $docViejo['actualizado_por'] : $docViejo['subido_por'];
                     $conexion->query("INSERT INTO historial_documentos (documento_id, empresa_cod, tipo_doc, nombre_personalizado, fecha_vencimiento, nombre_archivo_fisico, subido_por, motivo) VALUES ($dId, '$empresa_cod', '$tipo_doc', '$vNom', $vFec_val, '$vArc', '$vAutor', '$motivo')");
-                    
-                    $conexion->query("UPDATE documentos_pc SET nombre_personalizado = '$nombre_p', fecha_vencimiento = $vencimiento_sql, fecha_subida_sistema = '$fecha_solo_base', actualizado_por = '$usuario_ejecutor', nombre_archivo_fisico = '$nuevo_nombre_fisico', estatus = 1, motivo = '$motivo' WHERE id = $dId");
+                    $conexion->query("UPDATE documentos_pc SET nombre_personalizado = '$nombre_p', fecha_vencimiento = $vencimiento_sql, fecha_subida_sistema = '$fecha_solo_base', actualizado_por = '$usuario_ejecutor', nombre_archivo_fisico = '$nuevo_nombre_fisico', estatus = 1, motivo = '$motivo', notificar_correos = '$notificar_correos' WHERE id = $dId");
                     
                     echo json_encode(["status" => "success", "message" => "¡Documento modificado con éxito! Nuevo semáforo calculado.", "nueva_categoria" => $tipo_doc]);
                     exit;
                 }
             }
 
-            $queryDoc = "INSERT INTO documentos_pc (empresa_cod, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, estatus, nombre_archivo_fisico, motivo) 
-                         VALUES ('$empresa_cod', '$tipo_doc', '$nombre_p', $vencimiento_sql, '$fecha_solo_base', '$usuario_ejecutor', 1, '$nuevo_nombre_fisico', '$motivo')";
+            $queryDoc = "INSERT INTO documentos_pc (empresa_cod, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, estatus, nombre_archivo_fisico, motivo, notificar_correos) 
+                         VALUES ('$empresa_cod', '$tipo_doc', '$nombre_p', $vencimiento_sql, '$fecha_solo_base', '$usuario_ejecutor', 1, '$nuevo_nombre_fisico', '$motivo', '$notificar_correos')";
             
             if ($conexion->query($queryDoc)) {
                 echo json_encode(["status" => "success", "message" => "¡Archivo guardado e indexado con éxito!", "nueva_categoria" => $tipo_doc]);
@@ -209,6 +282,22 @@ if ($accion === 'subir_documento') {
     exit;
 }
 
+// --- ACCIÓN 2.5: LISTAR MIS NODOS (SUCURSALES Y PROPIA EMPRESA) ---
+if ($accion === 'listar_mis_nodos') {
+    $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
+    $base_empresa = explode('/', $empresa_cod)[0];
+
+    $res = $conexion->query("SELECT cod, nombre FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY cod ASC");
+    $nodos = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $nodos[] = $row;
+        }
+    }
+    echo json_encode(["status" => "success", "data" => $nodos]);
+    exit;
+}
+
 // --- ACCIÓN 3: LISTAR DOCUMENTOS ---
 if ($accion === 'listar_documentos') {
     $rol_ejecutor = strtolower(trim($datos['rol_ejecutor']));
@@ -217,7 +306,7 @@ if ($accion === 'listar_documentos') {
     $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
     $base_empresa = explode('/', $empresa_cod)[0];
 
-    $res = $conexion->query("SELECT id, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, actualizado_por, visto_por, estatus, nombre_archivo_fisico FROM documentos_pc WHERE empresa_cod = '$base_empresa' OR empresa_cod LIKE '$base_empresa/%' ORDER BY id DESC");
+    $res = $conexion->query("SELECT id, empresa_cod, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, actualizado_por, visto_por, estatus, nombre_archivo_fisico, notificar_correos FROM documentos_pc WHERE empresa_cod = '$base_empresa' OR empresa_cod LIKE '$base_empresa/%' ORDER BY id DESC");
     
     $documentos = [];
     $fecha_actual = date('Y-m-d');
@@ -287,8 +376,12 @@ if ($accion === 'listar_documentos') {
             if (in_array(strtolower($rol_ejecutor), $roles_notificados) && $color_semaforo !== 'green') {
                 $para = "responsable_infraestructura@upgradesystems.com";
                 $asunto = "🚨 ALERTA AUTOMÁTICA DE VENCIMIENTO - " . strtoupper($row['tipo_doc']);
-                $mensaje = "Estimado Equipo, se notifica que el documento " . $row['tipo_doc'] . " (" . $row['nombre_limpio'] . ") ha entrado en la fase " . $mensaje_estatus . " con un " . $row['porcentaje_vida'] . " de tiempo consumido. Requiere revisión inmediata en el sistema.";
-                $cabeceras = "From: no-reply@upgradesystems.com\r\nReply-To: no-reply@upgradesystems.com\r\nX-Mailer: PHP/" . phpversion();
+                $mensaje = "Estimado Equipo,\n\n";
+                $mensaje .= "Se notifica que el documento " . $row['tipo_doc'] . " (" . $row['nombre_limpio'] . ") ha entrado en la fase " . $mensaje_estatus . ".\n\n";
+                $mensaje .= "Requiere revisión inmediata en el sistema.\n\n";
+                $mensaje .= "Atentamente,\nXonexka";
+
+                $cabeceras = "From: no-reply@upgradesystems.com\r\nReply-To: no-reply@upgradesystems.com\r\nContent-Type: text/plain; charset=UTF-8\r\nX-Mailer: PHP/" . phpversion();
                 mail($para, $asunto, $mensaje, $cabeceras);
             }
 
@@ -340,7 +433,7 @@ if ($accion === 'listar_usuarios') {
     $base_empresa = explode('/', $empresa_cod)[0];
     
     // 🚀 Extraemos de la tabla empresas_clientes filtrando de forma segura por el código base organizacional /
-    $res = $conexion->query("SELECT cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY id DESC");
+    $res = $conexion->query("SELECT cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY id DESC");
     $usuarios = [];
     if($res) { while($row = $res->fetch_assoc()) { $usuarios[] = $row; } }
     echo json_encode(["status" => "success", "data" => $usuarios]);

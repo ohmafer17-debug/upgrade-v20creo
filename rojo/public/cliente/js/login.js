@@ -16,7 +16,20 @@ document.getElementById('formLoginGlobal').addEventListener('submit', async func
 
     try {
         // 🚀 DETECCIÓN DINÁMICA DE ENTORNO (LOCAL VS PRODUCCIÓN)
-        const base_url = window.location.origin + (window.location.hostname === 'localhost' ? '/upgrade_systems' : '');
+        const base_url = (() => {
+            let subFolder = '';
+            const pathParts = window.location.pathname.split('/');
+            const publicIndex = pathParts.indexOf('public');
+            if (publicIndex > 0) {
+                subFolder = '/' + pathParts.slice(1, publicIndex).join('/');
+            } else {
+                const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.startsWith('192.168.');
+                if (isLocal && pathParts.length > 1 && pathParts[1] !== '') {
+                    subFolder = '/' + pathParts[1];
+                }
+            }
+            return window.location.origin + subFolder;
+        })();
 
         const r = await fetch(`${base_url}/controllers/login_procesar.php`, {
             method: 'POST',
@@ -105,7 +118,20 @@ function verificarBloqueoActive() {
 }
 
 // --- CONTROL DEL MODAL DE RECUPERACIÓN ---
-const base_url_rec = window.location.origin + (window.location.hostname === 'localhost' ? '/upgrade_systems' : '');
+const base_url_rec = (() => {
+    let subFolder = '';
+    const pathParts = window.location.pathname.split('/');
+    const publicIndex = pathParts.indexOf('public');
+    if (publicIndex > 0) {
+        subFolder = '/' + pathParts.slice(1, publicIndex).join('/');
+    } else {
+        const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.startsWith('192.168.');
+        if (isLocal && pathParts.length > 1 && pathParts[1] !== '') {
+            subFolder = '/' + pathParts[1];
+        }
+    }
+    return window.location.origin + subFolder;
+})();
 const urlRecuperar = `${base_url_rec}/controllers/recuperar_procesar.php`;
 
 function abrirModalRecuperar(e) {

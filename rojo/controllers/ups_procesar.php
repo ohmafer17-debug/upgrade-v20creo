@@ -209,12 +209,12 @@ if ($accion === 'listar_licencias_globales') {
     END ASC";
 
     if ($filtro === 'TODAS') {
-        $query = "SELECT id, cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo FROM empresas_clientes ORDER BY $ordenJerarquico, id DESC";
+        $query = "SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo FROM empresas_clientes ORDER BY $ordenJerarquico, id DESC";
         $res = $conexion->query($query);
     } else {
         // Sentencia preparada para el filtrado dinámico por sucursal
         $filtro_like = $filtro . "/%";
-        $stmt = $conexion->prepare("SELECT id, cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo FROM empresas_clientes WHERE cod = ? OR cod LIKE ? ORDER BY $ordenJerarquico, id DESC");
+        $stmt = $conexion->prepare("SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo FROM empresas_clientes WHERE cod = ? OR cod LIKE ? ORDER BY $ordenJerarquico, id DESC");
         $stmt->bind_param("ss", $filtro, $filtro_like);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -227,6 +227,8 @@ if ($accion === 'listar_licencias_globales') {
                 "id" => $row['id'], 
                 "empresa_cod" => $row['cod'], 
                 "nombre_comercial" => $row['nombre'], 
+                "encargado" => $row['encargado'],
+                "director_email" => $row['director_email'],
                 "usuario_responsable" => $row['email'], 
                 "email_adicional" => $row['email_adicional'],
                 "telefono_principal" => $row['telefono_principal'],
@@ -255,6 +257,8 @@ if ($accion === 'editar_empresa_cliente') {
     $coordenadas        = isset($_POST['coordenadas']) ? trim($_POST['coordenadas']) : (isset($datos['coordenadas']) ? trim($datos['coordenadas']) : '');
     $rol                = isset($_POST['rol']) ? trim($_POST['rol']) : (isset($datos['rol']) ? trim($datos['rol']) : '');
     $pass               = isset($_POST['pass']) ? trim($_POST['pass']) : (isset($datos['pass']) ? trim($datos['pass']) : '');
+    $encargado          = isset($_POST['encargado']) ? trim($_POST['encargado']) : (isset($datos['encargado']) ? trim($datos['encargado']) : '');
+    $director_email     = isset($_POST['director_email']) ? trim($_POST['director_email']) : (isset($datos['director_email']) ? trim($datos['director_email']) : '');
 
     if (empty($nombre) || empty($email)) {
         echo json_encode(["status" => "error", "message" => "El nombre comercial y el correo electrónico principal son requeridos."]);
@@ -339,7 +343,9 @@ if ($accion === 'editar_empresa_cliente') {
                 telefono_adicional = ?, 
                 direccion = ?, 
                 coordenadas = ?, 
-                rol = ?";
+                rol = ?,
+                encargado = ?,
+                director_email = ?";
     
     if ($pass_hash !== null) {
         $query .= ", pass = ?";
@@ -353,13 +359,13 @@ if ($accion === 'editar_empresa_cliente') {
     
     // Bind dinámico
     if ($pass_hash !== null && $logo_actualizado) {
-        $stmt->bind_param("ssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $pass_hash, $logo_nombre_fisico, $id);
+        $stmt->bind_param("ssssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $encargado, $director_email, $pass_hash, $logo_nombre_fisico, $id);
     } elseif ($pass_hash !== null) {
-        $stmt->bind_param("sssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $pass_hash, $id);
+        $stmt->bind_param("sssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $encargado, $director_email, $pass_hash, $id);
     } elseif ($logo_actualizado) {
-        $stmt->bind_param("ssssssssss", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $logo_nombre_fisico, $id);
+        $stmt->bind_param("sssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $encargado, $director_email, $logo_nombre_fisico, $id);
     } else {
-        $stmt->bind_param("ssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $id);
+        $stmt->bind_param("ssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $encargado, $director_email, $id);
     }
 
     if ($stmt->execute()) {

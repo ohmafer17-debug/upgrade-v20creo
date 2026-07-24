@@ -94,7 +94,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
                 while ($user = $resUsuarios->fetch_assoc()) {
                     
                     $para = $user['email'];
-                    $asunto = "🚨 ALERTA AUTOMÁTICA UPGRADE SYSTEMS - " . $mensaje_estatus;
+                    $asunto = "🚨 ALERTA AUTOMÁTICA XONEXKA - " . $mensaje_estatus;
                     
                     $mensaje = "Estimado/a " . $user['nombre'] . " (Rol: " . $user['rol'] . "),\n\n";
                     $mensaje .= "Le informamos que el siguiente documento obligatorio requiere su atención:\n\n";
@@ -102,16 +102,17 @@ if ($resDocs && $resDocs->num_rows > 0) {
                     $mensaje .= "• Detalle: " . $nombre_limpio_doc . "\n";
                     $mensaje .= "• Vence el: " . $fecha_vence . "\n\n";
                     $mensaje .= "Solicitamos ingresar al portal corporativo para proceder con su actualización.\n\n";
-                    $mensaje .= "Atentamente,\nUpgrade Systems";
+                    $mensaje .= "Atentamente,\nXonexka";
 
                     $cabeceras = "From: no-reply@upgradesystems.com\r\n";
+                    $cabeceras .= "Content-Type: text/plain; charset=UTF-8\r\n";
                     $cabeceras .= "X-Mailer: PHP/" . phpversion();
 
                     // Envío de correo
                     mail($para, $asunto, $mensaje, $cabeceras);
                     
                     // Envío de WhatsApp (Bitácora local)
-                    $msg_whatsapp = "🚨 ALERTA UPGRADE SYSTEMS [{$mensaje_estatus}]: Hola {$user['nombre']}, el documento [{$doc['tipo_doc']}] está próximo a vencer el {$fecha_vence} ({$porcentaje_texto} consumido). Por favor actualízalo.";
+                    $msg_whatsapp = "🚨 ALERTA XONEXKA [{$mensaje_estatus}]: Hola {$user['nombre']}, el documento [{$doc['tipo_doc']}] está próximo a vencer el {$fecha_vence}. Por favor actualízalo.";
                     
                     if (!empty($user['telefono_principal'])) {
                         enviarNotificacionWhatsApp($user['telefono_principal'], $msg_whatsapp);
@@ -130,7 +131,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
                 foreach ($correos_adicionales as $c_adicional) {
                     $c_adicional = trim($c_adicional);
                     if (filter_var($c_adicional, FILTER_VALIDATE_EMAIL)) {
-                        $asunto_adicional = "🚨 ALERTA AUTOMÁTICA UPGRADE SYSTEMS - " . $mensaje_estatus;
+                        $asunto_adicional = "🚨 ALERTA AUTOMÁTICA XONEXKA - " . $mensaje_estatus;
                         
                         $mensaje_adicional = "Estimado/a,\n\n";
                         $mensaje_adicional .= "Le informamos que el siguiente documento obligatorio requiere su atención:\n\n";
@@ -138,9 +139,10 @@ if ($resDocs && $resDocs->num_rows > 0) {
                         $mensaje_adicional .= "• Detalle: " . $nombre_limpio_doc . "\n";
                         $mensaje_adicional .= "• Vence el: " . $fecha_vence . "\n\n";
                         $mensaje_adicional .= "Solicitamos ingresar al portal corporativo para proceder con su actualización.\n\n";
-                        $mensaje_adicional .= "Atentamente,\nUpgrade Systems";
+                        $mensaje_adicional .= "Atentamente,\nXonexka";
 
                         $cabeceras_adicional = "From: no-reply@upgradesystems.com\r\n";
+                        $cabeceras_adicional .= "Content-Type: text/plain; charset=UTF-8\r\n";
                         $cabeceras_adicional .= "X-Mailer: PHP/" . phpversion();
 
                         mail($c_adicional, $asunto_adicional, $mensaje_adicional, $cabeceras_adicional);
@@ -151,7 +153,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
             // Envío al contacto directo de la empresa exactamente un día antes del vencimiento
             $es_un_dia_antes = (round($dias_para_vencer) == 1);
             if ($es_un_dia_antes) {
-                $queryDirecto = "SELECT nombre, email FROM empresas_clientes WHERE cod = ?";
+                $queryDirecto = "SELECT nombre, email, director_email FROM empresas_clientes WHERE cod = ?";
                 $stmtDirecto = $conexion->prepare($queryDirecto);
                 $stmtDirecto->bind_param("s", $cod_empresa);
                 $stmtDirecto->execute();
@@ -159,7 +161,10 @@ if ($resDocs && $resDocs->num_rows > 0) {
                 if ($resDirecto && $resDirecto->num_rows > 0) {
                     $rowDirecto = $resDirecto->fetch_assoc();
                     $para_dir = $rowDirecto['email'];
-                    $asunto_dir = "🚨 AVISO CRÍTICO: SU DOCUMENTO VENCE MAÑANA - UPGRADE SYSTEMS";
+                    if (!empty($rowDirecto['director_email'])) {
+                        $para_dir .= ", " . $rowDirecto['director_email'];
+                    }
+                    $asunto_dir = "🚨 AVISO CRÍTICO: SU DOCUMENTO VENCE MAÑANA - XONEXKA";
                     
                     $mensaje_dir = "Estimado/a " . $rowDirecto['nombre'] . " (Contacto Directo),\n\n";
                     $mensaje_dir .= "Le informamos que el siguiente documento obligatorio está a solo 1 día de vencer:\n\n";
@@ -167,9 +172,10 @@ if ($resDocs && $resDocs->num_rows > 0) {
                     $mensaje_dir .= "• Detalle: " . $nombre_limpio_doc . "\n";
                     $mensaje_dir .= "• Vence el: " . $fecha_vence . "\n\n";
                     $mensaje_dir .= "Solicitamos ingresar al portal corporativo de forma inmediata para proceder con su actualización y evitar penalizaciones.\n\n";
-                    $mensaje_dir .= "Atentamente,\nUpgrade Systems";
+                    $mensaje_dir .= "Atentamente,\nXonexka";
 
                     $cabeceras_dir = "From: no-reply@upgradesystems.com\r\n";
+                    $cabeceras_dir .= "Content-Type: text/plain; charset=UTF-8\r\n";
                     $cabeceras_dir .= "X-Mailer: PHP/" . phpversion();
 
                     mail($para_dir, $asunto_dir, $mensaje_dir, $cabeceras_dir);
@@ -183,7 +189,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
                 if ($resAdmins && $resAdmins->num_rows > 0) {
                     while ($adm = $resAdmins->fetch_assoc()) {
                         $para_adm = $adm['email'];
-                        $asunto_adm = "🚨 ESCALAMIENTO MÁSTER UPGRADE SYSTEMS - " . $mensaje_estatus;
+                        $asunto_adm = "🚨 ESCALAMIENTO MÁSTER XONEXKA - " . $mensaje_estatus;
                         
                         $mensaje_adm = "Estimado/a " . $adm['nombre'] . " (Administrador Staff),\n\n";
                         $mensaje_adm .= "Le informamos sobre un escalamiento crítico de vigencia para el documento de la organización " . $base_empresa . ":\n\n";
@@ -191,9 +197,10 @@ if ($resDocs && $resDocs->num_rows > 0) {
                         $mensaje_adm .= "• Detalle: " . $nombre_limpio_doc . "\n";
                         $mensaje_adm .= "• Vence el: " . $fecha_vence . "\n\n";
                         $mensaje_adm .= "El sistema ha alertado al equipo local sin que se haya registrado actualización del expediente.\n\n";
-                        $mensaje_adm .= "Atentamente,\nUpgrade Systems";
+                        $mensaje_adm .= "Atentamente,\nXonexka";
 
                         $cabeceras_adm = "From: no-reply@upgradesystems.com\r\n";
+                        $cabeceras_adm .= "Content-Type: text/plain; charset=UTF-8\r\n";
                         $cabeceras_adm .= "X-Mailer: PHP/" . phpversion();
 
                         mail($para_adm, $asunto_adm, $mensaje_adm, $cabeceras_adm);

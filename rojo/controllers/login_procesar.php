@@ -79,9 +79,12 @@ if ($resAdmin && $resAdmin->num_rows > 0) {
 
     // Doble validación (Soporta hash bcrypt nuevo y texto plano para pruebas locales)
     if (password_verify($pass_post, $rowAdmin['pass']) || $pass_post === $rowAdmin['pass']) {
-        // Exitoso: resetear intentos
+        // Exitoso: resetear intentos y establecer sesión segura en PHP
         $_SESSION['login_attempts'] = 0;
         unset($_SESSION['login_lock_until']);
+        $_SESSION['sesion_activa'] = true;
+        $_SESSION['usuario_cod'] = 'UPS-STAFF';
+        $_SESSION['usuario_rol'] = $rowAdmin['rol'];
 
         echo json_encode([
             "status" => "success",
@@ -123,9 +126,12 @@ if ($resCliente && $resCliente->num_rows > 0) {
     if (password_verify($pass_post, $rowCliente['pass']) || $pass_post === $rowCliente['pass']) {
         $rol_real_bd = isset($rowCliente['rol']) ? $rowCliente['rol'] : 'Consultor';
         
-        // Exitoso: resetear intentos
+        // Exitoso: resetear intentos y establecer sesión segura en PHP
         $_SESSION['login_attempts'] = 0;
         unset($_SESSION['login_lock_until']);
+        $_SESSION['sesion_activa'] = true;
+        $_SESSION['usuario_cod'] = $rowCliente['cod'];
+        $_SESSION['usuario_rol'] = $rol_real_bd;
 
         echo json_encode([
             "status" => "success",

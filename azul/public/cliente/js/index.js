@@ -1,5 +1,18 @@
 // 🚀 DETECCIÓN DINÁMICA DE ENTORNO (LOCAL VS PRODUCCIÓN)
-const base_url = window.location.origin + (window.location.hostname === 'localhost' ? '/upgrade_systems' : '');
+const base_url = (() => {
+    let subFolder = '';
+    const pathParts = window.location.pathname.split('/');
+    const publicIndex = pathParts.indexOf('public');
+    if (publicIndex > 0) {
+        subFolder = '/' + pathParts.slice(1, publicIndex).join('/');
+    } else {
+        const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.startsWith('192.168.');
+        if (isLocal && pathParts.length > 1 && pathParts[1] !== '') {
+            subFolder = '/' + pathParts[1];
+        }
+    }
+    return window.location.origin + subFolder;
+})();
 const urlProcesador  = `${base_url}/controllers/cliente_procesar.php`;
 const empresaCod      = localStorage.getItem('cliente_sesion_id'); 
 const userName        = localStorage.getItem('cliente_sesion_nombre');
@@ -25,7 +38,7 @@ let ordenDireccionActual = 'asc';
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById('nombreEmpresa')) document.getElementById('nombreEmpresa').innerText = empresaCod;
     if (document.getElementById('containerMetaUsuario')) document.getElementById('containerMetaUsuario').innerHTML = `Usuario: <strong>${userName}</strong> | Rango: <span class="badge role">${rolActualSesion}</span>`;
-    aplicarRestrictionsMatriz(); cargarUsuariosCliente(); cargarDocumentosCliente(); cargarLogoEmpresa();
+    aplicarRestrictionsMatriz(); cargarUsuariosCliente(); cargarDocumentosCliente(); cargarLogoEmpresa(); cargarMisNodosSelect();
 
     // Inicializar listener para agregar correos de alerta dinámicos
     const btnAdd = document.getElementById('btnAddEmailAlerta');
@@ -171,18 +184,33 @@ function aplicarRestrictionsMatriz() {
     // Personalizar textos de creación según rol (Consultor vs Nodos comunes)
     const tituloSeccion = document.getElementById('tituloSeccionPersonal');
     const menuPersonal = document.getElementById('menu-personal');
+    const menuColaboradores = document.getElementById('menu-colaboradores');
+    
+    const wrapperUserRol = document.getElementById('wrapperUserRol');
+    const wrapperUserEncargado = document.getElementById('wrapperUserEncargado');
+    const lblUserNombre = document.getElementById('lblUserNombre');
+    const userNombreInput = document.getElementById('userNombre');
+    
     if (rAct === 'consultor') {
+        if (menuPersonal) menuPersonal.style.display = 'block';
+        if (menuColaboradores) menuColaboradores.style.display = 'block';
+        
         if (tituloSeccion) tituloSeccion.innerHTML = `<i class="fas fa-building-circle-check" style="color:var(--sidebar-active);"></i> Registrar Nueva Empresa / Sucursal`;
-        if (menuPersonal) {
-            const link = menuPersonal.querySelector('a');
-            if (link) link.innerHTML = `<i class="fas fa-building-circle-check"></i> Registrar Empresas`;
-        }
+        if (lblUserNombre) lblUserNombre.innerText = "Nombre de la Empresa / Sucursal";
+        if (userNombreInput) userNombreInput.placeholder = "Ej: Porsche Santa Fe";
+        if (wrapperUserEncargado) wrapperUserEncargado.style.display = 'block';
+        if (wrapperUserRol) wrapperUserRol.style.display = 'none';
+        
+        cargarColabEmpresasSelect();
     } else {
+        if (menuPersonal) menuPersonal.style.display = 'none';
+        if (menuColaboradores) menuColaboradores.style.display = 'block';
+        
         if (tituloSeccion) tituloSeccion.innerHTML = `<i class="fas fa-id-card-clip" style="color:var(--sidebar-active);"></i> Registrar Nuevo Nodo Operativo`;
-        if (menuPersonal) {
-            const link = menuPersonal.querySelector('a');
-            if (link) link.innerHTML = `<i class="fas fa-building-circle-check"></i> Estructura Interna`;
-        }
+        if (lblUserNombre) lblUserNombre.innerText = "Nombre Completo del Encargado";
+        if (userNombreInput) userNombreInput.placeholder = "Ej: Ing. Carlos Pérez";
+        if (wrapperUserEncargado) wrapperUserEncargado.style.display = 'none';
+        if (wrapperUserRol) wrapperUserRol.style.display = 'block';
     }
 
     // Mostrar campos de empresa si es Consultor
@@ -200,9 +228,9 @@ function initClienteMap() {
     if (mapDiv && !clienteMap) {
         const defaultCoords = [19.432608, -99.133208];
         clienteMap = L.map('clienteMap').setView(defaultCoords, 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© Google Maps'
         }).addTo(clienteMap);
         
         clienteMarker = L.marker(defaultCoords, { draggable: true }).addTo(clienteMap);
@@ -233,6 +261,65 @@ function initClienteMap() {
         setTimeout(() => {
             clienteMap.invalidateSize();
         }, 300);
+    }
+}
+
+async function cargarMisNodosSelect() {
+    const rAct = rolActualSesion.toLowerCase();
+    const selectEmpresa = document.getElementById('docEmpresaSelect');
+    const wrapper = document.getElementById('wrapperSeleccionarEmpresaDoc');
+    
+    if (rAct === 'consultor' || rAct === 'responsable nacional' || rAct === 'responsable_nacional') {
+        if (wrapper) wrapper.style.display = 'block';
+        if (!selectEmpresa) return;
+        
+        try {
+            const r = await fetch(urlProcesador, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accion: 'listar_mis_nodos', empresa_cod: empresaCod })
+            });
+            const res = await r.json();
+            if (res.status === 'success') {
+                selectEmpresa.innerHTML = '';
+                res.data.forEach(nodo => {
+                    const selectedAttr = nodo.cod === empresaCod ? 'selected' : '';
+                    selectEmpresa.innerHTML += `<option value="${nodo.cod}" ${selectedAttr}>${nodo.nombre} (${nodo.cod})</option>`;
+                });
+            }
+        } catch (e) {
+            console.error("Error al cargar la lista de nodos:", e);
+        }
+    } else {
+        if (wrapper) wrapper.style.display = 'none';
+    }
+}
+
+async function cargarColabEmpresasSelect() {
+    const rAct = rolActualSesion.toLowerCase();
+    const selectEmpresa = document.getElementById('colabEmpresaSelect');
+    const wrapper = document.getElementById('wrapperAsignarEmpresaColab');
+    if (rAct === 'consultor') {
+        if (wrapper) wrapper.style.display = 'block';
+        if (!selectEmpresa) return;
+        try {
+            const r = await fetch(urlProcesador, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accion: 'listar_mis_nodos', empresa_cod: empresaCod })
+            });
+            const res = await r.json();
+            if (res.status === 'success') {
+                selectEmpresa.innerHTML = '';
+                res.data.forEach(nodo => {
+                    selectEmpresa.innerHTML += `<option value="${nodo.cod}">${nodo.nombre} (${nodo.cod})</option>`;
+                });
+            }
+        } catch (e) {
+            console.error("Error al cargar la lista de empresas para colaboradores:", e);
+        }
+    } else {
+        if (wrapper) wrapper.style.display = 'none';
     }
 }
 
@@ -284,6 +371,7 @@ function renderizarTablaFiltrada(arregloDatos) {
         b.innerHTML += `<tr>
             <td><span class="semaphore ${color}"></span></td>
             <td><strong>${d.tipo_doc}</strong></td>
+            <td><code>${d.empresa_cod}</code></td>
             <td>${d.nombre_limpio}</td>
             <td>${trazabilidadHtml}</td>
             <td><span class="badge ${badgeColorClass}">${txt}</span></td>
@@ -302,7 +390,7 @@ function renderizarTablaFiltrada(arregloDatos) {
                     alert("La justificación es obligatoria para actualizar el archivo.");
                     return;
                 }
-                activarFlujoActualizar(d.tipo_doc, d.nombre_limpio, d.fecha_vencimiento, mot.trim(), d.notificar_correos || '');
+                activarFlujoActualizar(d.tipo_doc, d.nombre_limpio, d.fecha_vencimiento, mot.trim(), d.notificar_correos || '', d.empresa_cod);
             };
         }, 10);
     });
@@ -354,7 +442,7 @@ async function suspenderArchivo(idDocumento) {
     }
 }
 
-function activarFlujoActualizar(tipoDoc, nombreActual, fVenc, mot, correos) {
+function activarFlujoActualizar(tipoDoc, nombreActual, fVenc, mot, correos, targetEmpresa) {
     document.getElementById('docTipo').value = tipoDoc;
     document.getElementById('docNombre').value = nombreActual + " (" + mot + ")";
     document.getElementById('docVencimiento').value = fVenc;
@@ -362,13 +450,26 @@ function activarFlujoActualizar(tipoDoc, nombreActual, fVenc, mot, correos) {
     refrescarInputsCorreosDinamicos(correos || '');
     document.getElementById('esActualizacion').value = "si";
     document.getElementById('docMotivo').value = mot;
+    
+    const selectEmpresa = document.getElementById('docEmpresaSelect');
+    if (selectEmpresa && targetEmpresa) {
+        selectEmpresa.value = targetEmpresa;
+    }
+    
     document.getElementById('containerFormSubida').scrollIntoView({ behavior: 'smooth' });
 }
 
 async function unificadoSubmitForm(e) {
     e.preventDefault(); const formData = new FormData();
     formData.append('accion', 'subir_documento'); formData.append('rol_ejecutor', rolActualSesion);
-    formData.append('usuario_ejecutor', userName); formData.append('empresa_cod', empresaCod);
+    formData.append('usuario_ejecutor', userName);
+    
+    let targetEmpresaCod = empresaCod;
+    const selectEmpresa = document.getElementById('docEmpresaSelect');
+    if (selectEmpresa && selectEmpresa.value) {
+        targetEmpresaCod = selectEmpresa.value;
+    }
+    formData.append('empresa_cod', targetEmpresaCod);
     
     // Capturar fecha y hora local del instante real sin desfases UTC
     const ahora = new Date();
@@ -477,7 +578,7 @@ function ordenarDocumentos(columna) {
         icon.style.opacity = '0.4';
     });
     
-    const thIndex = { 'color': 0, 'categoria': 1, 'nombre': 2, 'vencimiento': 3, 'estatus': 4 }[columna];
+    const thIndex = { 'color': 0, 'categoria': 1, 'empresa': 2, 'nombre': 3, 'vencimiento': 4, 'estatus': 5 }[columna];
     const headers = document.querySelectorAll('#tablaDocsPrincipal .sortable-headers th');
     if (headers && headers[thIndex]) {
         const icon = headers[thIndex].querySelector('i');
@@ -498,6 +599,9 @@ function ordenarDocumentos(columna) {
         } else if (columna === 'categoria') {
             valA = (a.tipo_doc || '').toString().toLowerCase();
             valB = (b.tipo_doc || '').toString().toLowerCase();
+        } else if (columna === 'empresa') {
+            valA = (a.empresa_cod || '').toString().toLowerCase();
+            valB = (b.empresa_cod || '').toString().toLowerCase();
         } else if (columna === 'nombre') {
             valA = (a.nombre_limpio || '').toString().toLowerCase();
             valB = (b.nombre_limpio || '').toString().toLowerCase();
@@ -570,6 +674,9 @@ function renderizarTablaUsuarios() {
     const b = document.getElementById('tablaUsuariosBody'); if(!b) return; b.innerHTML = ""; 
     cacheUsuarios.forEach(u => { 
         let contactos = `<div><span style="font-weight:600;"><i class="fas fa-envelope"></i> Principal:</span> ${u.email}</div>`;
+        if (u.director_email) {
+            contactos += `<div><span style="font-weight:600;"><i class="fas fa-user-tie"></i> Director:</span> ${u.director_email}</div>`;
+        }
         if (u.email_adicional) {
             contactos += `<div><span style="font-weight:600;"><i class="fas fa-envelope"></i> Adicional:</span> ${u.email_adicional}</div>`;
         }
@@ -583,9 +690,14 @@ function renderizarTablaUsuarios() {
         const esActivo = parseInt(u.activo) === 1;
         const estatusBadge = `<span class="badge ${esActivo ? 'green' : 'red'}">${esActivo ? 'Activa' : 'Suspendida'}</span>`;
         
+        let nombreMostrado = `<strong>${u.nombre}</strong>`;
+        if (u.encargado) {
+            nombreMostrado += `<div style="font-size:0.85rem; color:#64748b; margin-top:2px;"><i class="fas fa-user-tie" style="color:#94a3b8;"></i> Encargado: <strong>${u.encargado}</strong></div>`;
+        }
+
         b.innerHTML += `<tr>
             <td><code>${u.cod}</code></td>
-            <td><strong>${u.nombre}</strong></td>
+            <td>${nombreMostrado}</td>
             <td>${contactos}</td>
             <td><span class="badge role">${u.rol || 'No asignado'}</span></td>
             <td>${estatusBadge}</td>
@@ -619,17 +731,19 @@ if(document.getElementById('usuarioClienteForm')) {
         formData.append('accion', 'crear_usuario_operativo');
         formData.append('rol_ejecutor', rolActualSesion);
         formData.append('nombre', document.getElementById('userNombre').value.trim());
-        formData.append('rol', document.getElementById('userRol').value);
+        formData.append('rol', (rolActualSesion.toLowerCase() === 'consultor') ? 'Tipo 1' : document.getElementById('userRol').value);
         formData.append('email', document.getElementById('userEmail').value.trim());
         formData.append('email_adicional', document.getElementById('userEmailPersonal').value.trim());
         formData.append('telefono_principal', document.getElementById('userTelEmpresa').value.trim());
         formData.append('telefono_adicional', document.getElementById('userTelPersonal').value.trim());
         formData.append('pass', pass);
         formData.append('empresa_cod', empresaCod);
+        formData.append('encargado', (rolActualSesion.toLowerCase() === 'consultor') ? document.getElementById('userEncargado').value.trim() : '');
 
         if (rolActualSesion.toLowerCase() === 'consultor') {
             formData.append('direccion', document.getElementById('empresaDireccion').value.trim());
             formData.append('coordenadas', document.getElementById('empresaCoordenadas').value.trim());
+            formData.append('director_email', document.getElementById('empresaDirectorEmail').value.trim());
             const logoFile = document.getElementById('empresaLogo').files[0];
             if (logoFile) {
                 formData.append('logo', logoFile);
@@ -654,6 +768,51 @@ if(document.getElementById('usuarioClienteForm')) {
                     clienteMap.setView(defaultCoords, 13);
                 }
             }
+            cargarUsuariosCliente();
+            cargarColabEmpresasSelect();
+            cargarMisNodosSelect();
+        } else {
+            alert("Error: " + res.message);
+        }
+    });
+}
+
+if (document.getElementById('colaboradorForm')) {
+    document.getElementById('colaboradorForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const pass = document.getElementById('colabPass').value.trim();
+        const passErr = validarPasswordComplejidad(pass);
+        if (passErr) {
+            alert("Seguridad de Contraseña: " + passErr);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('accion', 'crear_usuario_operativo');
+        formData.append('rol_ejecutor', rolActualSesion);
+        formData.append('nombre', document.getElementById('colabNombre').value.trim());
+        formData.append('rol', document.getElementById('colabRol').value);
+        formData.append('email', document.getElementById('colabEmail').value.trim());
+        formData.append('email_adicional', document.getElementById('colabEmailPersonal').value.trim());
+        formData.append('telefono_principal', document.getElementById('colabTelEmpresa').value.trim());
+        formData.append('telefono_adicional', document.getElementById('colabTelPersonal').value.trim());
+        formData.append('pass', pass);
+        
+        let targetEmpresa = empresaCod;
+        const selectEmpresa = document.getElementById('colabEmpresaSelect');
+        if (rolActualSesion.toLowerCase() === 'consultor' && selectEmpresa && selectEmpresa.value) {
+            targetEmpresa = selectEmpresa.value;
+        }
+        formData.append('empresa_cod', targetEmpresa);
+
+        const r = await fetch(urlProcesador, {
+            method: 'POST',
+            body: formData
+        });
+        const res = await r.json();
+        if(res.status === 'success') {
+            alert("¡Colaborador registrado exitosamente!");
+            document.getElementById('colaboradorForm').reset();
             cargarUsuariosCliente();
         } else {
             alert("Error: " + res.message);
@@ -755,7 +914,13 @@ if(document.getElementById('cambioPassForm')) {
     });
 }
 
-function cerrarSesion() { localStorage.clear(); window.location.replace('login.html'); }
+async function cerrarSesion() {
+    try {
+        await fetch(`${base_url}/controllers/logout.php`);
+    } catch(e) {}
+    localStorage.clear();
+    window.location.replace('login.html');
+}
 
 function toggleMobileMenu() {
     const sidebar = document.querySelector('.sidebar');

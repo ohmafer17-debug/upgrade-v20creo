@@ -39,7 +39,8 @@
                 <i class="fas fa-bars mobile-menu-toggle" onclick="toggleMobileMenu()"></i>
             </div>
             <ul class="menu-items">
-                <li id="menu-registrar" class="active" onclick="cambiarVistaUps('registrar')"><a><i class="fas fa-building-shield"></i> Registrar Empresas</a></li>
+                <li id="menu-consultores" class="active" onclick="cambiarVistaUps('consultores')"><a><i class="fas fa-user-tie"></i> Registrar Consultores</a></li>
+                <li id="menu-registrar" onclick="cambiarVistaUps('registrar')"><a><i class="fas fa-building-shield"></i> Registrar Sucursales</a></li>
                 <li id="menu-licencias" onclick="cambiarVistaUps('licencias')"><a><i class="fas fa-key"></i> Licencias Activas</a></li>
                 <li id="menu-admins" onclick="cambiarVistaUps('admins')"><a><i class="fas fa-user-gear"></i> Administradores UPS</a></li>
             </ul>
@@ -55,26 +56,82 @@
             <p>Sesión Activa Global: <strong style="color: var(--ups-blue-light);">Administrador UPS</strong></p>
         </div>
 
-        <div id="vista-registrar" class="vista-seccion activa">
+        <div id="vista-consultores" class="vista-seccion activa">
             <div class="form-box">
-                <h2><i class="fas fa-folder-plus"></i> Alta de Nueva Empresa / Licencia</h2>
+                <h2><i class="fas fa-user-tie"></i> Alta de Nuevo Consultor (Organización Raíz)</h2>
+                <form id="registroConsultorForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre Comercial de la Organización</label>
+                            <input type="text" id="consNombre" placeholder="Ej: Porsche México" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Código de Organización (ID único)</label>
+                            <input type="text" id="consCod" placeholder="Ej: Roto123" required>
+                        </div>
+                        <div class="form-group full">
+                            <label>Nombre Completo del Encargado</label>
+                            <input type="text" id="consEncargado" placeholder="Ej: Ing. Carlos Pérez" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico Principal (Acceso)</label>
+                            <input type="email" id="consEmail" placeholder="correo@empresa.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico Adicional (Opcional)</label>
+                            <input type="email" id="consEmailPersonal" placeholder="adicional@empresa.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono Principal</label>
+                            <input type="tel" id="consTelEmpresa" placeholder="10 dígitos" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Teléfono Adicional (Opcional)</label>
+                            <input type="tel" id="consTelPersonal" placeholder="10 dígitos">
+                        </div>
+                        <div class="form-group full">
+                            <label>Dirección Física de la Organización</label>
+                            <input type="text" id="consDireccion" placeholder="Calle, Número, Colonia, Ciudad, Estado" required>
+                        </div>
+                        <div class="form-group full">
+                            <label>Coordenadas GPS (Latitud, Longitud)</label>
+                            <input type="text" id="consCoordenadas" placeholder="Ej: 19.432608, -99.133208" required>
+                            <div id="consMap" style="height: 250px; border-radius: 12px; border: 1px solid #cbd5e1; margin-top: 10px; width: 100%; z-index: 1;"></div>
+                        </div>
+                        <div class="form-group full">
+                            <label>Contraseña Temporal de Seguridad</label>
+                            <input type="password" id="consPass" placeholder="••••••••••••" required>
+                        </div>
+                        <div class="form-group full">
+                            <label>Logotipo de la Organización (Opcional)</label>
+                            <input type="file" id="consLogo" accept="image/*">
+                        </div>
+                    </div>
+                    <br><button type="submit" class="btn-submit" style="background:var(--ups-accent);"><i class="fas fa-plus"></i> Desplegar Consultor Corporativo</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="vista-registrar" class="vista-seccion">
+            <div class="form-box">
+                <h2><i class="fas fa-folder-plus"></i> Alta de Nueva Empresa / Sucursal (Vinculada)</h2>
                 <form id="registroEmpresaForm">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>Nombre Comercial de la Empresa</label>
-                            <input type="text" id="empresaNombre" placeholder="Ej: Pemex Corporativo" required>
+                            <label>Nombre de la Empresa / Sucursal</label>
+                            <input type="text" id="empresaNombre" placeholder="Ej: Porsche Santa Fe" required>
                         </div>
                         <div class="form-group">
-                            <label>Código de Organización (ID)</label>
-                            <input type="text" id="empresaCod" placeholder="Ej: PEMEX-01" required>
-                        </div>
-                        <div class="form-group full">
-                            <label>Nombre Completo del Responsable / Enlace</label>
-                            <input type="text" id="nombreUsuario" placeholder="Ej: Ing. Carlos Pérez" required>
+                            <label>Nombre Completo del Encargado</label>
+                            <input type="text" id="empresaEncargado" placeholder="Ej: Ing. Carlos Pérez" required>
                         </div>
                         <div class="form-group">
                             <label>Correo Electrónico Corporativo (Principal)</label>
                             <input type="email" id="emailUsuario" placeholder="carlos.perez@empresa.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Correo Electrónico del Director de la Sucursal</label>
+                            <input type="email" id="empresaDirectorEmail" placeholder="director@empresa.com" required>
                         </div>
                         <div class="form-group">
                             <label>Correo Electrónico Adicional (Opcional)</label>
@@ -97,33 +154,18 @@
                             <input type="text" id="empresaCoordenadas" placeholder="Ej: 19.432608, -99.133208" required>
                             <div id="adminMap" style="height: 250px; border-radius: 12px; border: 1px solid #cbd5e1; margin-top: 10px; width: 100%; z-index: 1;"></div>
                         </div>
-                        <div class="form-group">
-                            <label>¿Esta cuenta le pertenece a una organización ya registrada?</label>
-                            <select id="selectPerteneceRN" onchange="evaluarFlujoResponsableNacional(this.value)">
-                                <option value="NO" selected>No, es una organización independiente / raíz (Licencia Base)</option>
-                                <option value="SI">Sí, esta cuenta pertenece a una estructura existente</option>
-                            </select>
-                        </div>
-                        <div class="form-group full" id="wrapperFiltroRN" style="display: none; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1;">
-                            <label style="color: var(--ups-accent); font-weight: 700;"><i class="fas fa-users-viewfinder"></i> Filtrar y Seleccionar Nodo Superior:</label>
+                        
+                        <div class="form-group full" id="wrapperFiltroRN" style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1;">
+                            <label style="color: var(--ups-accent); font-weight: 700;"><i class="fas fa-user-tie"></i> Vincular a Consultor / Organización Superior:</label>
                             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
                                 <select id="filtroNombresRNSelect" onchange="actualizarPrevisualizacionRN(this.value)">
-                                    <option value="NINGUNO">-- Seleccione un superior del catálogo --</option>
+                                    <option value="NINGUNO">-- Seleccione un Consultor del catálogo --</option>
                                 </select>
                                 <button type="button" class="btn-rn-toggle" onclick="cargarCatalogoResponsables()"><i class="fas fa-rotate"></i> Recargar Nodos</button>
                             </div>
                             <div id="previewRNBox" class="info-rn-box" style="display: none; margin-bottom: 10px;"></div>
                         </div>
-                        <div class="form-group">
-                            <label>Rango Organizacional a Asignar</label>
-                            <select id="empresaRolInicial" required>
-                                <option value="Consultor" selected>Consultor (Dueño / Cuenta Corporativa)</option>
-                                <option value="Responsable Nacional">Responsable Nacional</option>
-                                <option value="Tipo 1">Tipo 1</option>
-                                <option value="Tipo 2">Tipo 2</option>
-                                <option value="Tipo 3">Tipo 3</option>
-                            </select>
-                        </div>
+
                         <div class="form-group full">
                             <label>Contraseña Temporal de Seguridad</label>
                             <input type="password" id="passUsuario" placeholder="••••••••••••" required>
@@ -154,8 +196,16 @@
                             <input type="text" id="editEmpresaNombre" required placeholder="Ej: Pemex Corporativo">
                         </div>
                         <div class="form-group">
+                            <label>Nombre Completo del Encargado</label>
+                            <input type="text" id="editEmpresaEncargado" required placeholder="Ej: Ing. Carlos Pérez">
+                        </div>
+                        <div class="form-group">
                             <label>Correo Electrónico Principal</label>
                             <input type="email" id="editEmpresaEmail" required placeholder="carlos@empresa.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Correo del Director de la Empresa / Sucursal</label>
+                            <input type="email" id="editEmpresaDirectorEmail" required placeholder="director@empresa.com">
                         </div>
                         <div class="form-group">
                             <label>Correo Electrónico Adicional (Opcional)</label>
@@ -290,6 +340,6 @@
         </div>
     </div>
 
-    <script src="js/index.js"></script>
+    <script src="js/index.js?v=2.0"></script>
 </body>
 </html>

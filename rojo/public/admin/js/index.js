@@ -6,6 +6,8 @@ let adminMap = null;
 let adminMarker = null;
 let adminEditMap = null;
 let adminEditMarker = null;
+let consMap = null;
+let consMarker = null;
 
 // Candado de control (RBAC Integral)
 (function() {
@@ -66,7 +68,12 @@ function cambiarVistaUps(vista) {
     if (vista === 'licencias') { inicializarFiltroEmpresas(); cargarLicenciasOFiltrarRoles(); }
     if (vista === 'admins') { cargarAdministradoresUps(); }
     
+    if (vista === 'consultores') {
+        initConsMap();
+        setTimeout(() => { if (consMap) consMap.invalidateSize(); }, 150);
+    }
     if (vista === 'registrar') {
+        initAdminMaps();
         setTimeout(() => { if (adminMap) adminMap.invalidateSize(); }, 150);
     }
 
@@ -77,53 +84,42 @@ function cambiarVistaUps(vista) {
     }
 }
 
-function cerrarSesionMaster() {
+async function cerrarSesionMaster() {
     if (confirm("¿Estás segura de que deseas cerrar la sesión?")) {
+        try {
+            await fetch(`../controllers/logout.php`);
+        } catch(e) {}
         localStorage.clear(); 
         window.location.replace("login.html");
     }
 }
 
 
-function evaluarFlujoResponsableNacional(valor) {
-    const container = document.getElementById('wrapperFiltroRN');
-    if (valor === 'SI') { container.style.display = "flex"; cargarCatalogoResponsables(); } 
-    else {
-        container.style.display = "none"; document.getElementById('previewRNBox').style.display = "none";
-        document.getElementById('filtroNombresRNSelect').value = "NINGUNO"; restablecerRolesFormularioCompleto();
-    }
-}
+function evaluarFlujoResponsableNacional(valor) {}
 
 async function cargarCatalogoResponsables() {
     const select = document.getElementById('filtroNombresRNSelect');
-    select.innerHTML = `<option value="NINGUNO">-- Cargando catálogo corporativo... --</option>`;
+    if (!select) return;
+    select.innerHTML = `<option value="NINGUNO">-- Cargando catálogo de Consultores... --</option>`;
     try {
         const r = await fetch(urlProcesadorAdmin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'listar_licencias_globales', filtro_empresa: 'TODAS' }) });
         const res = await r.json();
         if (res.status === 'success') {
-            listaResponsablesCache = res.data.filter(u => u.rol.toLowerCase() === 'consultor' || u.rol.toLowerCase() === 'responsable nacional' || u.rol.toLowerCase() === 'responsable_nacional');
-            select.innerHTML = `<option value="NINGUNO">-- Seleccione el nodo jerárquico superior --</option>`;
-            listaResponsablesCache.forEach(u => { select.innerHTML += `<option value="${u.usuario_responsable}">${u.nombre_comercial} (${u.rol})</option>`; });
+            listaResponsablesCache = res.data.filter(u => u.rol.toLowerCase() === 'consultor');
+            select.innerHTML = `<option value="NINGUNO">-- Seleccione un Consultor del catálogo --</option>`;
+            listaResponsablesCache.forEach(u => { select.innerHTML += `<option value="${u.usuario_responsable}">${u.nombre_comercial} (ID: ${u.empresa_cod})</option>`; });
         }
     } catch (err) { console.error(err); }
 }
 
 function actualizarPrevisualizacionRN(emailElegido) {
     const box = document.getElementById('previewRNBox');
-    const selectRolForm = document.getElementById('empresaRolInicial');
-    if (emailElegido === 'NINGUNO') { box.style.display = "none"; restablecerRolesFormularioCompleto(); return; }
+    if (emailElegido === 'NINGUNO') { box.style.display = "none"; return; }
     
     const nodoSuperior = listaResponsablesCache.find(u => u.usuario_responsable === emailElegido);
     if (nodoSuperior) {
-        box.innerHTML = `<strong>👤 Superior Asignado:</strong> ${nodoSuperior.nombre_comercial}<br><strong>📧 Correo Enlace:</strong> ${emailElegido}<br><strong>🎖️ Rango de Origen:</strong> ${nodoSuperior.rol}`;
+        box.innerHTML = `<strong>👤 Consultor Superior:</strong> ${nodoSuperior.nombre_comercial}<br><strong>📧 Correo Enlace:</strong> ${emailElegido}`;
         box.style.display = "block";
-        const rolPadre = nodoSuperior.rol.toLowerCase();
-        selectRolForm.innerHTML = "";
-        if (rolPadre === 'consultor') {
-            selectRolForm.innerHTML = `<option value="Responsable Nacional" selected>Responsable Nacional</option><option value="Tipo 1">Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`;
-        } else if (rolPadre === 'responsable nacional' || rolPadre === 'responsable_nacional') {
-            selectRolForm.innerHTML = `<option value="Tipo 1" selected>Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`;
-        }
     }
 }
 
@@ -168,13 +164,58 @@ function validarPasswordComplejidad(password) {
     return null;
 }
 
-function restablecerRolesFormularioCompleto() {
-    document.getElementById('empresaRolInicial').innerHTML = `<option value="Consultor" selected>Consultor (Dueño / Cuenta Corporativa)</option><option value="Responsable Nacional">Responsable Nacional</option><option value="Tipo 1">Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`;
-}
+document.getElementById('registroConsultorForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const pass = document.getElementById('consPass').value.trim();
+    const passErr = validarPasswordComplejidad(pass);
+    if (passErr) {
+        alert("Seguridad de Contraseña: " + passErr);
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('accion', 'registrar_nueva_empresa');
+    formData.append('empresa_nombre', document.getElementById('consNombre').value.trim());
+    formData.append('empresa_cod', document.getElementById('consCod').value.trim());
+    formData.append('encargado', document.getElementById('consEncargado').value.trim());
+    formData.append('email_usuario', document.getElementById('consEmail').value.trim());
+    formData.append('director_email', '');
+    formData.append('email_adicional', document.getElementById('consEmailPersonal').value.trim());
+    formData.append('telefono_principal', document.getElementById('consTelEmpresa').value.trim());
+    formData.append('telefono_adicional', document.getElementById('consTelPersonal').value.trim());
+    formData.append('direccion', document.getElementById('consDireccion').value.trim());
+    formData.append('coordenadas', document.getElementById('consCoordenadas').value.trim());
+    formData.append('rol_inicial', 'Consultor');
+    formData.append('pass_usuario', pass);
+    formData.append('rn_vinculado', ''); // Raíz/Independiente
+    formData.append('usuario_ejecutor_email', localStorage.getItem('ups_sesion_email') || '');
+
+    const logoFile = document.getElementById('consLogo').files[0];
+    if (logoFile) {
+        formData.append('logo', logoFile);
+    }
+
+    const r = await fetch(urlProcesadorAdmin, { method: 'POST', body: formData });
+    const res = await r.json();
+    if (res.status === 'success') { 
+        alert(res.message); 
+        document.getElementById('registroConsultorForm').reset(); 
+        cambiarVistaUps('licencias'); 
+    } else { 
+        alert(res.message); 
+    }
+});
 
 document.getElementById('registroEmpresaForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    const parentSelect = document.getElementById('filtroNombresRNSelect').value;
+    if (parentSelect === 'NINGUNO') {
+        alert("Por favor, seleccione un Consultor / Organización Superior.");
+        return;
+    }
+
     const pass = document.getElementById('passUsuario').value.trim();
     const passErr = validarPasswordComplejidad(pass);
     if (passErr) {
@@ -185,17 +226,18 @@ document.getElementById('registroEmpresaForm').addEventListener('submit', async 
     const formData = new FormData();
     formData.append('accion', 'registrar_nueva_empresa');
     formData.append('empresa_nombre', document.getElementById('empresaNombre').value.trim());
-    formData.append('empresa_cod', document.getElementById('empresaCod').value.trim());
-    formData.append('nombre_usuario', document.getElementById('nombreUsuario').value.trim());
+    formData.append('empresa_cod', ''); // Autocargado en backend
+    formData.append('encargado', document.getElementById('empresaEncargado').value.trim());
     formData.append('email_usuario', document.getElementById('emailUsuario').value.trim());
+    formData.append('director_email', document.getElementById('empresaDirectorEmail').value.trim());
     formData.append('email_adicional', document.getElementById('emailUsuarioAdicional').value.trim());
     formData.append('telefono_principal', document.getElementById('telefonoUsuarioPrincipal').value.trim());
     formData.append('telefono_adicional', document.getElementById('telefonoUsuarioAdicional').value.trim());
     formData.append('direccion', document.getElementById('empresaDireccion').value.trim());
     formData.append('coordenadas', document.getElementById('empresaCoordenadas').value.trim());
-    formData.append('rol_inicial', document.getElementById('empresaRolInicial').value);
+    formData.append('rol_inicial', 'Tipo 1');
     formData.append('pass_usuario', pass);
-    formData.append('rn_vinculado', document.getElementById('filtroNombresRNSelect').value);
+    formData.append('rn_vinculado', parentSelect);
     formData.append('usuario_ejecutor_email', localStorage.getItem('ups_sesion_email') || '');
 
     const logoFile = document.getElementById('empresaLogo').files[0];
@@ -208,9 +250,7 @@ document.getElementById('registroEmpresaForm').addEventListener('submit', async 
     if (res.status === 'success') { 
         alert(res.message); 
         document.getElementById('registroEmpresaForm').reset(); 
-        document.getElementById('wrapperFiltroRN').style.display = "none"; 
         document.getElementById('previewRNBox').style.display = "none"; 
-        restablecerRolesFormularioCompleto(); 
         cambiarVistaUps('licencias'); 
     } else { 
         alert(res.message); 
@@ -267,7 +307,9 @@ function prepararEdicionEmpresa(index) {
     document.getElementById('editEmpresaId').value = emp.id;
     document.getElementById('editEmpresaCod').value = emp.empresa_cod;
     document.getElementById('editEmpresaNombre').value = emp.nombre_comercial;
+    document.getElementById('editEmpresaEncargado').value = emp.encargado || '';
     document.getElementById('editEmpresaEmail').value = emp.usuario_responsable;
+    document.getElementById('editEmpresaDirectorEmail').value = emp.director_email || '';
     document.getElementById('editEmpresaEmailAdicional').value = emp.email_adicional || '';
     document.getElementById('editEmpresaTelPrincipal').value = emp.telefono_principal || '';
     document.getElementById('editEmpresaTelAdicional').value = emp.telefono_adicional || '';
@@ -318,7 +360,9 @@ document.getElementById('edicionEmpresaForm').addEventListener('submit', async f
     formData.append('accion', 'editar_empresa_cliente');
     formData.append('id', document.getElementById('editEmpresaId').value);
     formData.append('nombre', document.getElementById('editEmpresaNombre').value.trim());
+    formData.append('encargado', document.getElementById('editEmpresaEncargado').value.trim());
     formData.append('email', document.getElementById('editEmpresaEmail').value.trim());
+    formData.append('director_email', document.getElementById('editEmpresaDirectorEmail').value.trim());
     formData.append('email_adicional', document.getElementById('editEmpresaEmailAdicional').value.trim());
     formData.append('telefono_principal', document.getElementById('editEmpresaTelPrincipal').value.trim());
     formData.append('telefono_adicional', document.getElementById('editEmpresaTelAdicional').value.trim());
@@ -338,6 +382,7 @@ document.getElementById('edicionEmpresaForm').addEventListener('submit', async f
     if (res.status === 'success') { 
         alert(res.message); 
         cancelarEdicionEmpresa(); 
+        await inicializarFiltroEmpresas();
         cargarLicenciasOFiltrarRoles(); 
     } else { 
         alert(res.message); 
@@ -610,9 +655,9 @@ function initAdminMaps() {
     if (mapDiv && !adminMap) {
         const defaultCoords = [19.432608, -99.133208];
         adminMap = L.map('adminMap').setView(defaultCoords, 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© Google Maps'
         }).addTo(adminMap);
         
         adminMarker = L.marker(defaultCoords, { draggable: true }).addTo(adminMap);
@@ -645,9 +690,9 @@ function initAdminMaps() {
     if (editMapDiv && !adminEditMap) {
         const defaultCoords = [19.432608, -99.133208];
         adminEditMap = L.map('adminEditMap').setView(defaultCoords, 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
             maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© Google Maps'
         }).addTo(adminEditMap);
         
         adminEditMarker = L.marker(defaultCoords, { draggable: true }).addTo(adminEditMap);
@@ -671,6 +716,43 @@ function initAdminMaps() {
                     const latlng = [lat, lng];
                     adminEditMarker.setLatLng(latlng);
                     adminEditMap.setView(latlng, 15);
+                }
+            }
+        });
+    }
+}
+
+function initConsMap() {
+    const mapDiv = document.getElementById('consMap');
+    if (mapDiv && !consMap) {
+        const defaultCoords = [19.432608, -99.133208];
+        consMap = L.map('consMap').setView(defaultCoords, 13);
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 19,
+            attribution: '© Google Maps'
+        }).addTo(consMap);
+        
+        consMarker = L.marker(defaultCoords, { draggable: true }).addTo(consMap);
+        
+        consMarker.on('dragend', function() {
+            const pos = consMarker.getLatLng();
+            document.getElementById('consCoordenadas').value = `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
+        });
+        
+        consMap.on('click', function(e) {
+            consMarker.setLatLng(e.latlng);
+            document.getElementById('consCoordenadas').value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+        });
+        
+        document.getElementById('consCoordenadas').addEventListener('input', function() {
+            const val = this.value.split(',');
+            if (val.length === 2) {
+                const lat = parseFloat(val[0].trim());
+                const lng = parseFloat(val[1].trim());
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const latlng = [lat, lng];
+                    consMarker.setLatLng(latlng);
+                    consMap.setView(latlng, 15);
                 }
             }
         });
