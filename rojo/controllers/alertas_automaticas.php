@@ -10,6 +10,13 @@ echo "=== INICIANDO ESCANEO AUTOMÁTICO DE ALERTAS ===\n\n";
 
 require_once __DIR__ . "/../config/conexion.php";
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require_once __DIR__ . '/../config/PHPMailer/Exception.php';
+require_once __DIR__ . '/../config/PHPMailer/PHPMailer.php';
+require_once __DIR__ . '/../config/PHPMailer/SMTP.php';
+
 $fecha_actual = date('Y-m-d');
 
 // 1. Buscamos los documentos activos con fechas de vencimiento válidas
@@ -41,15 +48,13 @@ if ($resDocs && $resDocs->num_rows > 0) {
         $dias_para_vencer = ($timestamp_vence - $timestamp_actual) / 86400;
 
         $roles_notificados = [];
-        $notificar_staff = false;
         $mensaje_estatus = "";
         
-        // 🚀 EVALUAMOS LAS ALERTAS SEGÚN LA NUEVA MATRIZ DE SEMÁFOROS
+        // 🚀 EVALUAMOS LAS ALERTAS SEGÚN LA NUEVA MATRIZ DE SEMÁFOROS (ESCALAMIENTO)
         if ($dias_para_vencer <= 1) {
             // Semáforo Rojo: 1 día o menos para vencer, o ya vencido
             $mensaje_estatus = "CRÍTICO (ROJO)";
             $roles_notificados = ['tipo 3', 'tipo 2', 'tipo 1', 'responsable nacional', 'responsable_nacional', 'consultor'];
-            $notificar_staff = true;
         } elseif ($porcentaje_consumido >= 95) {
             // Naranja Alerta 2
             $mensaje_estatus = "PRÓXIMO A VENCER MUY URGENTE (NARANJA 2)";
@@ -104,12 +109,8 @@ if ($resDocs && $resDocs->num_rows > 0) {
                     $mensaje .= "Solicitamos ingresar al portal corporativo para proceder con su actualización.\n\n";
                     $mensaje .= "Atentamente,\nXonexka";
 
-                    $cabeceras = "From: no-reply@upgradesystems.com\r\n";
-                    $cabeceras .= "Content-Type: text/plain; charset=UTF-8\r\n";
-                    $cabeceras .= "X-Mailer: PHP/" . phpversion();
-
-                    // Envío de correo
-                    mail($para, $asunto, $mensaje, $cabeceras);
+                     // Envío de correo
+                     enviarCorreoSMTP($para, $asunto, $mensaje);
                     
                     // Envío de WhatsApp (Bitácora local)
                     $msg_whatsapp = "🚨 ALERTA XONEXKA [{$mensaje_estatus}]: Hola {$user['nombre']}, el documento [{$doc['tipo_doc']}] está próximo a vencer el {$fecha_vence}. Por favor actualízalo.";
@@ -141,11 +142,7 @@ if ($resDocs && $resDocs->num_rows > 0) {
                         $mensaje_adicional .= "Solicitamos ingresar al portal corporativo para proceder con su actualización.\n\n";
                         $mensaje_adicional .= "Atentamente,\nXonexka";
 
-                        $cabeceras_adicional = "From: no-reply@upgradesystems.com\r\n";
-                        $cabeceras_adicional .= "Content-Type: text/plain; charset=UTF-8\r\n";
-                        $cabeceras_adicional .= "X-Mailer: PHP/" . phpversion();
-
-                        mail($c_adicional, $asunto_adicional, $mensaje_adicional, $cabeceras_adicional);
+                        enviarCorreoSMTP($c_adicional, $asunto_adicional, $mensaje_adicional);
                     }
                 }
             }
@@ -174,39 +171,12 @@ if ($resDocs && $resDocs->num_rows > 0) {
                     $mensaje_dir .= "Solicitamos ingresar al portal corporativo de forma inmediata para proceder con su actualización y evitar penalizaciones.\n\n";
                     $mensaje_dir .= "Atentamente,\nXonexka";
 
-                    $cabeceras_dir = "From: no-reply@upgradesystems.com\r\n";
-                    $cabeceras_dir .= "Content-Type: text/plain; charset=UTF-8\r\n";
-                    $cabeceras_dir .= "X-Mailer: PHP/" . phpversion();
-
-                    mail($para_dir, $asunto_dir, $mensaje_dir, $cabeceras_dir);
+                    enviarCorreoSMTP($para_dir, $asunto_dir, $mensaje_dir);
                 }
                 $stmtDirecto->close();
             }
 
-            // 🚀 ESCALAMIENTO AL STAFF (ROJO)
-            if ($notificar_staff) {
-                $resAdmins = $conexion->query("SELECT nombre, email FROM admin_ups WHERE estatus = 'Activo'");
-                if ($resAdmins && $resAdmins->num_rows > 0) {
-                    while ($adm = $resAdmins->fetch_assoc()) {
-                        $para_adm = $adm['email'];
-                        $asunto_adm = "🚨 ESCALAMIENTO MÁSTER XONEXKA - " . $mensaje_estatus;
-                        
-                        $mensaje_adm = "Estimado/a " . $adm['nombre'] . " (Administrador Staff),\n\n";
-                        $mensaje_adm .= "Le informamos sobre un escalamiento crítico de vigencia para el documento de la organización " . $base_empresa . ":\n\n";
-                        $mensaje_adm .= "• Documento: " . $doc['tipo_doc'] . "\n";
-                        $mensaje_adm .= "• Detalle: " . $nombre_limpio_doc . "\n";
-                        $mensaje_adm .= "• Vence el: " . $fecha_vence . "\n\n";
-                        $mensaje_adm .= "El sistema ha alertado al equipo local sin que se haya registrado actualización del expediente.\n\n";
-                        $mensaje_adm .= "Atentamente,\nXonexka";
 
-                        $cabeceras_adm = "From: no-reply@upgradesystems.com\r\n";
-                        $cabeceras_adm .= "Content-Type: text/plain; charset=UTF-8\r\n";
-                        $cabeceras_adm .= "X-Mailer: PHP/" . phpversion();
-
-                        mail($para_adm, $asunto_adm, $mensaje_adm, $cabeceras_adm);
-                    }
-                }
-            }
         }
     }
 }
@@ -254,5 +224,38 @@ function enviarNotificacionWhatsApp($telefono, $mensaje) {
     */
     
     return true;
+}
+
+function enviarCorreoSMTP($para, $asunto, $mensaje) {
+    if (!defined('SMTP_USER') || SMTP_USER === 'ESCRIBE_AQUI_TU_CORREO@gmail.com') {
+        echo "[SMTP INFO] Correo no enviado a $para. Configura las credenciales SMTP en config/conexion.php para enviar.\n";
+        return false;
+    }
+
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = SMTP_HOST;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = SMTP_USER;
+        $mail->Password   = SMTP_PASS;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = SMTP_PORT;
+
+        $mail->setFrom(SMTP_USER, 'Upgrade Systems Alertas');
+        $mail->addAddress($para);
+
+        $mail->isHTML(false);
+        $mail->CharSet = 'UTF-8';
+        $mail->Subject = $asunto;
+        $mail->Body    = $mensaje;
+
+        $mail->send();
+        echo "[SMTP SUCCESS] Correo enviado exitosamente a $para\n";
+        return true;
+    } catch (Exception $e) {
+        echo "[SMTP ERROR] No se pudo enviar el correo a $para. Error: " . $mail->ErrorInfo . "\n";
+        return false;
+    }
 }
 ?>

@@ -36,8 +36,10 @@ let ordenColumnaActual = 'cod';
 let ordenDireccionActual = 'asc';
 
 document.addEventListener("DOMContentLoaded", () => {
-    if (document.getElementById('nombreEmpresa')) document.getElementById('nombreEmpresa').innerText = empresaCod;
-    if (document.getElementById('containerMetaUsuario')) document.getElementById('containerMetaUsuario').innerHTML = `Usuario: <strong>${userName}</strong> | Rango: <span class="badge role">${rolActualSesion}</span>`;
+    if (document.getElementById('containerMetaUsuario')) {
+        const rolVal = localStorage.getItem('cliente_sesion_rol') || 'N/A';
+        document.getElementById('containerMetaUsuario').innerHTML = `Empresa: <strong style="color:var(--sidebar-active);">${userName} (${empresaCod})</strong> | Encargado: <strong>${rolVal}</strong>`;
+    }
     aplicarRestrictionsMatriz(); cargarUsuariosCliente(); cargarDocumentosCliente(); cargarLogoEmpresa(); cargarMisNodosSelect();
 
     // Inicializar listener para agregar correos de alerta dinámicos
@@ -48,18 +50,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Vincular input de correo principal
-    const inputPrincipal = document.getElementById('docEmailPrincipal');
-    if (inputPrincipal) {
-        inputPrincipal.addEventListener('input', renderizarEmailsDinamicos);
-    }
+
 });
 
 function renderizarEmailsDinamicos() {
-    const principal = document.getElementById('docEmailPrincipal') ? document.getElementById('docEmailPrincipal').value.trim() : '';
     const emails = [];
-    if (principal) emails.push(principal);
-    
     const container = document.getElementById('containerEmailsAlerta');
     if (container) {
         const inputs = container.querySelectorAll('.email-adicional-input');
@@ -68,7 +63,6 @@ function renderizarEmailsDinamicos() {
             if (val) emails.push(val);
         });
     }
-    
     document.getElementById('docCorreosAlerta').value = emails.join(',');
 }
 
@@ -128,23 +122,15 @@ function agregarInputEmail(valor = '') {
 }
 
 function refrescarInputsCorreosDinamicos(correosStr = '') {
-    const principalInput = document.getElementById('docEmailPrincipal');
     const container = document.getElementById('containerEmailsAlerta');
     if (container) container.innerHTML = '';
     
     const emails = correosStr ? correosStr.split(',') : [];
     
-    if (emails.length > 0) {
-        if (principalInput) principalInput.value = emails[0].trim();
-        for (let i = 1; i < emails.length; i++) {
-            const emailExtra = emails[i].trim();
-            if (emailExtra) {
-                agregarInputEmail(emailExtra);
-            }
-        }
-    } else {
-        if (principalInput) principalInput.value = '';
-    }
+    emails.forEach(email => {
+        const emailExtra = email.trim();
+        if (emailExtra) agregarInputEmail(emailExtra);
+    });
     
     renderizarEmailsDinamicos();
 }
@@ -158,12 +144,15 @@ async function cargarLogoEmpresa() {
         });
         const res = await r.json();
         if (res.status === 'success' && res.logo) {
+            localStorage.setItem('cliente_sesion_logo', res.logo);
             const logoContainer = document.getElementById('sidebarLogoContainer');
             const logoImg = document.getElementById('sidebarLogo');
             if (logoContainer && logoImg) {
                 logoImg.src = `${base_url}/public/uploads/logos/${res.logo}`;
                 logoContainer.style.display = 'block';
             }
+        } else if (res.status === 'success' && !res.logo) {
+            localStorage.removeItem('cliente_sesion_logo');
         }
     } catch (err) {
         console.error("Error al cargar el logo corporativo:", err);
@@ -171,9 +160,20 @@ async function cargarLogoEmpresa() {
 }
 
 function aplicarRestrictionsMatriz() {
-    const selectRol = document.getElementById('userRol'); const boxForm = document.getElementById('boxFormPersonal');
-    const msgBloqueo = document.getElementById('msgBloqueoRol'); const formSubidaDocs = document.getElementById('formSubidaDocs');
-    if(selectRol) selectRol.innerHTML = ""; const rAct = rolActualSesion.toLowerCase();
+    const selectRol = document.getElementById('userRol'); 
+    const boxForm = document.getElementById('boxFormPersonal');
+    const msgBloqueo = document.getElementById('msgBloqueoRol'); 
+    const formSubidaDocs = document.getElementById('formSubidaDocs');
+    
+    // Declaración segura de referencias DOM implícitas
+    const menuPersonal = document.getElementById('menu-personal');
+    const menuColaboradores = document.getElementById('menu-colaboradores');
+    const tituloSeccion = document.getElementById('tituloSeccionPersonal');
+    const lblUserNombre = document.getElementById('lblUserNombre');
+    const userNombreInput = document.getElementById('userNombre');
+
+    if(selectRol) selectRol.innerHTML = ""; 
+    const rAct = rolActualSesion.toLowerCase();
     if (rAct === 'administrador' || rAct === 'consultor') { if(boxForm) boxForm.style.display = "block"; if(msgBloqueo) msgBloqueo.style.display = "none"; if(selectRol) selectRol.innerHTML += `<option value="Responsable Nacional" selected>Responsable Nacional</option><option value="Tipo 1">Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; } 
     else if (rAct === 'responsable_nacional' || rAct === 'responsable nacional') { if(boxForm) boxForm.style.display = "block"; if(msgBloqueo) msgBloqueo.style.display = "none"; if(selectRol) selectRol.innerHTML += `<option value="Tipo 1" selected>Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; }
     else if (rAct === 'tipo 1') { if(boxForm) boxForm.style.display = "block"; if(msgBloqueo) msgBloqueo.style.display = "none"; if(selectRol) selectRol.innerHTML += `<option value="Tipo 1" selected>Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; }
@@ -181,118 +181,104 @@ function aplicarRestrictionsMatriz() {
     if (rAct === 'tipo 2') { if(formSubidaDocs) formSubidaDocs.innerHTML = `<div style="padding:20px; text-align:center; color:#1e3a8a; background:#eff6ff; border:1px dashed #3b82f6; border-radius:12px; font-weight:600;">Modo Modificación Activo: Use el botón "Actualizar" en el catálogo.</div>`; }
     if (rAct === 'tipo 3') { if(formSubidaDocs) formSubidaDocs.innerHTML = `<div style="padding:25px; text-align:center; color:#7c2d12; background:#fff7ed; border:1px dashed #fb923c; border-radius:12px; font-weight:600;">Modo de Solo Lectura habilitado para su rango administrativo.</div>`; }
 
-    // Personalizar textos de creación según rol (Consultor vs Nodos comunes)
-    const tituloSeccion = document.getElementById('tituloSeccionPersonal');
-    const menuPersonal = document.getElementById('menu-personal');
-    const menuColaboradores = document.getElementById('menu-colaboradores');
-    
-    const wrapperUserRol = document.getElementById('wrapperUserRol');
-    const wrapperUserEncargado = document.getElementById('wrapperUserEncargado');
-    const lblUserNombre = document.getElementById('lblUserNombre');
-    const userNombreInput = document.getElementById('userNombre');
-    
     if (rAct === 'consultor') {
         if (menuPersonal) menuPersonal.style.display = 'block';
         if (menuColaboradores) menuColaboradores.style.display = 'block';
         
-        if (tituloSeccion) tituloSeccion.innerHTML = `<i class="fas fa-building-circle-check" style="color:var(--sidebar-active);"></i> Registrar Nueva Empresa / Sucursal`;
+        if (tituloSeccion) tituloSeccion.innerHTML = `<i class="fas fa-building-circle-check" style="color:var(--sidebar-active);"></i> Registrar Nueva Empresa`;
         if (lblUserNombre) lblUserNombre.innerText = "Nombre de la Empresa / Sucursal";
         if (userNombreInput) userNombreInput.placeholder = "Ej: Porsche Santa Fe";
-        if (wrapperUserEncargado) wrapperUserEncargado.style.display = 'block';
-        if (wrapperUserRol) wrapperUserRol.style.display = 'none';
         
+        initClienteMap();
+        cargarIdClienteSucursal();
         cargarColabEmpresasSelect();
+        
+        // Mostrar columnas de acciones para consultor
+        document.querySelectorAll('.columna-acciones-consultor').forEach(el => el.style.display = '');
     } else {
         if (menuPersonal) menuPersonal.style.display = 'none';
         if (menuColaboradores) menuColaboradores.style.display = 'block';
         
         if (tituloSeccion) tituloSeccion.innerHTML = `<i class="fas fa-id-card-clip" style="color:var(--sidebar-active);"></i> Registrar Nuevo Nodo Operativo`;
-        if (lblUserNombre) lblUserNombre.innerText = "Nombre Completo del Encargado";
-        if (userNombreInput) userNombreInput.placeholder = "Ej: Ing. Carlos Pérez";
-        if (wrapperUserEncargado) wrapperUserEncargado.style.display = 'none';
-        if (wrapperUserRol) wrapperUserRol.style.display = 'block';
-    }
-
-    // Mostrar campos de empresa si es Consultor
-    const wrapperEmpresa = document.getElementById('wrapperCamposEmpresa');
-    if (rAct === 'consultor' && wrapperEmpresa) {
-        wrapperEmpresa.style.display = 'block';
-        initClienteMap();
-    } else if (wrapperEmpresa) {
-        wrapperEmpresa.style.display = 'none';
+        if (lblUserNombre) lblUserNombre.innerText = "Nombre de la Empresa / Sucursal";
+        if (userNombreInput) userNombreInput.placeholder = "Ej: Carlos Pérez";
+        
+        // Ocultar columnas de acciones
+        document.querySelectorAll('.columna-acciones-consultor').forEach(el => el.style.display = 'none');
     }
 }
 
-function initClienteMap() {
-    const mapDiv = document.getElementById('clienteMap');
-    if (mapDiv && !clienteMap) {
-        const defaultCoords = [19.432608, -99.133208];
-        clienteMap = L.map('clienteMap').setView(defaultCoords, 13);
-        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 19,
-            attribution: '© Google Maps'
-        }).addTo(clienteMap);
-        
-        clienteMarker = L.marker(defaultCoords, { draggable: true }).addTo(clienteMap);
-        
-        clienteMarker.on('dragend', function() {
-            const pos = clienteMarker.getLatLng();
-            document.getElementById('empresaCoordenadas').value = `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
+function initClienteMap() {}
+
+async function cargarIdClienteSucursal(nombreSucursal = '') {
+    const preview = document.getElementById('previewIdClienteSucursal');
+    const texto = document.getElementById('textoIdClienteSucursal');
+    const hidden = document.getElementById('idClienteSucursal');
+    if (!preview || !texto || !hidden) return;
+
+    texto.textContent = 'Calculando...';
+    try {
+        const r = await fetch(urlProcesador, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                accion: 'previsualizar_id_sucursal', 
+                empresa_cod: empresaCod,
+                nombre_sucursal: nombreSucursal
+            })
         });
-        
-        clienteMap.on('click', function(e) {
-            clienteMarker.setLatLng(e.latlng);
-            document.getElementById('empresaCoordenadas').value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-        });
-        
-        document.getElementById('empresaCoordenadas').addEventListener('input', function() {
-            const val = this.value.split(',');
-            if (val.length === 2) {
-                const lat = parseFloat(val[0].trim());
-                const lng = parseFloat(val[1].trim());
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const latlng = [lat, lng];
-                    clienteMarker.setLatLng(latlng);
-                    clienteMap.setView(latlng, 15);
-                }
-            }
-        });
-        
-        setTimeout(() => {
-            clienteMap.invalidateSize();
-        }, 300);
+        const res = await r.json();
+        if (res.status === 'success') {
+            texto.textContent = res.siguiente_id;
+            hidden.value = res.siguiente_id;
+        } else {
+            texto.textContent = 'Error';
+        }
+    } catch(e) {
+        texto.textContent = 'Error de red';
     }
 }
 
 async function cargarMisNodosSelect() {
     const rAct = rolActualSesion.toLowerCase();
-    const selectEmpresa = document.getElementById('docEmpresaSelect');
-    const wrapper = document.getElementById('wrapperSeleccionarEmpresaDoc');
+    const selectExpediente = document.getElementById('selectEmpresaExpediente');
+    if (!selectExpediente) return;
     
-    if (rAct === 'consultor' || rAct === 'responsable nacional' || rAct === 'responsable_nacional') {
-        if (wrapper) wrapper.style.display = 'block';
-        if (!selectEmpresa) return;
-        
-        try {
-            const r = await fetch(urlProcesador, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accion: 'listar_mis_nodos', empresa_cod: empresaCod })
+    try {
+        const r = await fetch(urlProcesador, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accion: 'listar_mis_nodos', empresa_cod: empresaCod, rol_ejecutor: rolActualSesion })
+        });
+        const res = await r.json();
+        if (res.status === 'success') {
+            selectExpediente.innerHTML = '';
+            res.data.forEach(nodo => {
+                const isSelected = nodo.cod === empresaCod ? 'selected' : '';
+                selectExpediente.innerHTML += `<option value="${nodo.cod}" ${isSelected}>${nodo.nombre} (${nodo.cod})</option>`;
             });
-            const res = await r.json();
-            if (res.status === 'success') {
-                selectEmpresa.innerHTML = '';
-                res.data.forEach(nodo => {
-                    const selectedAttr = nodo.cod === empresaCod ? 'selected' : '';
-                    selectEmpresa.innerHTML += `<option value="${nodo.cod}" ${selectedAttr}>${nodo.nombre} (${nodo.cod})</option>`;
-                });
+            
+            if (rAct === 'tipo 2' || rAct === 'tipo 3') {
+                selectExpediente.disabled = true;
+            } else {
+                selectExpediente.disabled = false;
             }
-        } catch (e) {
-            console.error("Error al cargar la lista de nodos:", e);
+            
+            // Establecer valor inicial y cargar documentos
+            const valorInicial = selectExpediente.value;
+            actualizarSeleccionEmpresaExpediente(valorInicial);
         }
-    } else {
-        if (wrapper) wrapper.style.display = 'none';
+    } catch (e) {
+        console.error("Error al cargar la lista de nodos:", e);
     }
+}
+
+function actualizarSeleccionEmpresaExpediente(valor) {
+    const hiddenInput = document.getElementById('docEmpresaCod');
+    if (hiddenInput) {
+        hiddenInput.value = valor;
+    }
+    cargarDocumentosCliente(valor);
 }
 
 async function cargarColabEmpresasSelect() {
@@ -306,7 +292,7 @@ async function cargarColabEmpresasSelect() {
             const r = await fetch(urlProcesador, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accion: 'listar_mis_nodos', empresa_cod: empresaCod })
+                body: JSON.stringify({ accion: 'listar_mis_nodos', empresa_cod: empresaCod, rol_ejecutor: rolActualSesion })
             });
             const res = await r.json();
             if (res.status === 'success') {
@@ -323,15 +309,70 @@ async function cargarColabEmpresasSelect() {
     }
 }
 
-async function cargarDocumentosCliente() {
+async function cargarDocumentosCliente(empresaEspecificaCod = '') {
     const rAct = rolActualSesion.toLowerCase(); if (rAct === 'administrador') return;
-    const r = await fetch(urlProcesador, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'listar_documentos', empresa_cod: empresaCod, rol_ejecutor: rolActualSesion }) });
+    const r = await fetch(urlProcesador, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+            accion: 'listar_documentos', 
+            empresa_cod: empresaCod, 
+            rol_ejecutor: rolActualSesion,
+            empresa_especifica_cod: empresaEspecificaCod
+        }) 
+    });
     const res = await r.json();
     if(res.status === 'success') {
         cacheDocumentos = res.data;
         listadoCategoriasDinamicas = [];
         res.data.forEach(d => { if(!listadoCategoriasDinamicas.includes(d.tipo_doc)) listadoCategoriasDinamicas.push(d.tipo_doc); });
         actualizarComponenteFiltroSelect(); renderizarTablaFiltrada(res.data);
+        
+        // Actualizar la barra global de Inicio
+        cargarUltimaActualizacionGlobal();
+    }
+}
+
+async function cargarUltimaActualizacionGlobal() {
+    const barraAct = document.getElementById('barraUltimaActualizacion');
+    const valUltimoDoc = document.getElementById('valUltimoDoc');
+    const valFechaDoc = document.getElementById('valFechaDoc');
+    if (!barraAct || !valUltimoDoc || !valFechaDoc) return;
+
+    const rAct = rolActualSesion.toLowerCase();
+    if (rAct === 'administrador') return;
+
+    try {
+        const r = await fetch(urlProcesador, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                accion: 'listar_documentos',
+                empresa_cod: empresaCod,
+                rol_ejecutor: rolActualSesion
+            })
+        });
+        const res = await r.json();
+        if (res.status === 'success') {
+            const docsConArchivo = res.data.filter(d => d.nombre_archivo_fisico && d.nombre_archivo_fisico.trim() !== '');
+            if (docsConArchivo.length > 0) {
+                const ultimoDoc = docsConArchivo[0];
+                const nombreLimpio = ultimoDoc.nombre_limpio || ultimoDoc.nombre_personalizado || ultimoDoc.tipo_doc;
+                let fechaSubida = ultimoDoc.fecha_subida_sistema || '';
+                if (fechaSubida.includes(' ')) {
+                    fechaSubida = fechaSubida.split(' ')[0];
+                }
+                valUltimoDoc.textContent = nombreLimpio;
+                valFechaDoc.textContent = fechaSubida;
+                barraAct.style.display = 'flex';
+            } else {
+                valUltimoDoc.textContent = 'Ninguno';
+                valFechaDoc.textContent = '--';
+                barraAct.style.display = 'flex';
+            }
+        }
+    } catch (e) {
+        console.error("Error al cargar la última actualización global:", e);
     }
 }
 
@@ -451,10 +492,14 @@ function activarFlujoActualizar(tipoDoc, nombreActual, fVenc, mot, correos, targ
     document.getElementById('esActualizacion').value = "si";
     document.getElementById('docMotivo').value = mot;
     
-    const selectEmpresa = document.getElementById('docEmpresaSelect');
-    if (selectEmpresa && targetEmpresa) {
-        selectEmpresa.value = targetEmpresa;
-    }
+    const checkboxes = document.querySelectorAll('#docEmpresaCheckboxes input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        if (targetEmpresa) {
+            cb.checked = (cb.value === targetEmpresa);
+        } else {
+            cb.checked = false;
+        }
+    });
     
     document.getElementById('containerFormSubida').scrollIntoView({ behavior: 'smooth' });
 }
@@ -464,12 +509,22 @@ async function unificadoSubmitForm(e) {
     formData.append('accion', 'subir_documento'); formData.append('rol_ejecutor', rolActualSesion);
     formData.append('usuario_ejecutor', userName);
     
-    let targetEmpresaCod = empresaCod;
-    const selectEmpresa = document.getElementById('docEmpresaSelect');
-    if (selectEmpresa && selectEmpresa.value) {
-        targetEmpresaCod = selectEmpresa.value;
+    let targetEmpresas = [];
+    const checkedBoxes = document.querySelectorAll('#docEmpresaCheckboxes input[type="checkbox"]:checked');
+    const isConsultor = (rolActualSesion.toLowerCase() === 'consultor' || rolActualSesion.toLowerCase() === 'responsable nacional' || rolActualSesion.toLowerCase() === 'responsable_nacional');
+    if (isConsultor && checkedBoxes.length === 0) {
+        alert("Por favor, seleccione al menos una Empresa / Sucursal para asignar el documento.");
+        return;
     }
-    formData.append('empresa_cod', targetEmpresaCod);
+    
+    if (checkedBoxes.length > 0) {
+        checkedBoxes.forEach(cb => {
+            targetEmpresas.push(cb.value);
+        });
+    } else {
+        targetEmpresas.push(empresaCod);
+    }
+    formData.append('empresa_cod', targetEmpresas.join(','));
     
     // Capturar fecha y hora local del instante real sin desfases UTC
     const ahora = new Date();
@@ -491,7 +546,18 @@ async function unificadoSubmitForm(e) {
     formData.append('es_actualizacion', document.getElementById('esActualizacion').value);
     formData.append('motivo', document.getElementById('docMotivo').value);
     formData.append('notificar_correos', document.getElementById('docCorreosAlerta').value.trim());
-    formData.append('archivo', document.getElementById('docFile').files[0]);
+    const docFileInput = document.getElementById('docFile');
+    if (docFileInput && docFileInput.files.length > 0) {
+        const MAX_MB = 100 * 1024 * 1024;
+        let oversize = false;
+        Array.from(docFileInput.files).forEach(file => {
+            if (file.size > MAX_MB) { oversize = true; }
+        });
+        if (oversize) { alert('Uno o más archivos superan el límite de 100MB. Por favor ajusta tu selección.'); return; }
+        Array.from(docFileInput.files).forEach(file => {
+            formData.append('archivo[]', file);
+        });
+    }
     
     const r = await fetch(urlProcesador, { method: 'POST', body: formData }); const res = await r.json(); alert(res.message);
     if(res.status === 'success') { 
@@ -672,7 +738,18 @@ function ordenarUsuarios(columna) {
 
 function renderizarTablaUsuarios() {
     const b = document.getElementById('tablaUsuariosBody'); if(!b) return; b.innerHTML = ""; 
+    const rAct = rolActualSesion.toLowerCase();
+    let countNodos = 0;
+
     cacheUsuarios.forEach(u => { 
+        // Omitir la propia cuenta del consultor principal
+        if (u.cod === empresaCod) return;
+
+        // Solo mostrar sucursales (los que tienen encargado registrado)
+        if (!u.encargado || u.encargado.trim() === '') return;
+
+        countNodos++;
+
         let contactos = `<div><span style="font-weight:600;"><i class="fas fa-envelope"></i> Principal:</span> ${u.email}</div>`;
         if (u.director_email) {
             contactos += `<div><span style="font-weight:600;"><i class="fas fa-user-tie"></i> Director:</span> ${u.director_email}</div>`;
@@ -691,8 +768,14 @@ function renderizarTablaUsuarios() {
         const estatusBadge = `<span class="badge ${esActivo ? 'green' : 'red'}">${esActivo ? 'Activa' : 'Suspendida'}</span>`;
         
         let nombreMostrado = `<strong>${u.nombre}</strong>`;
-        if (u.encargado) {
-            nombreMostrado += `<div style="font-size:0.85rem; color:#64748b; margin-top:2px;"><i class="fas fa-user-tie" style="color:#94a3b8;"></i> Encargado: <strong>${u.encargado}</strong></div>`;
+        nombreMostrado += `<div style="font-size:0.85rem; color:#64748b; margin-top:2px;"><i class="fas fa-user-tie" style="color:#94a3b8;"></i> Encargado: <strong>${u.encargado}</strong></div>`;
+
+        let accionesHtml = "";
+        if (rAct === 'consultor') {
+            let btnEditar = `<button class="btn-action edit" onclick="abrirEditarNodo('${u.cod}', '${u.nombre.replace(/'/g, "\\'")}', '${(u.encargado || '').replace(/'/g, "\\'")}', '${u.director_email || ''}', '${u.email}', '${u.email_adicional || ''}', '${u.telefono_principal || ''}', '${u.telefono_adicional || ''}', '${(u.direccion || '').replace(/'/g, "\\'")}', '${u.coordenadas || ''}', '${u.rol || ''}')"><i class="fas fa-edit"></i> Editar</button>`;
+            let btnLlamar = u.telefono_principal ? `<a href="tel:${u.telefono_principal}" class="btn-action btn-view" style="background:#2563eb; color:#fff; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; padding:6px 12px; font-weight:600;"><i class="fas fa-phone"></i> Llamar</a>` : '';
+            let btnSuspender = `<button class="btn-action ${esActivo ? 'btn-suspend' : 'btn-activate'}" onclick="suspenderNodoCliente('${u.cod}')"><i class="fas ${esActivo ? 'fa-user-slash' : 'fa-user-check'}"></i> ${esActivo ? 'Suspender' : 'Activar'}</button>`;
+            accionesHtml = `<td class="actions-cell columna-acciones-consultor"><div class="btn-action-group" style="gap:5px;">${btnEditar}${btnLlamar}${btnSuspender}</div></td>`;
         }
 
         b.innerHTML += `<tr>
@@ -701,17 +784,227 @@ function renderizarTablaUsuarios() {
             <td>${contactos}</td>
             <td><span class="badge role">${u.rol || 'No asignado'}</span></td>
             <td>${estatusBadge}</td>
+            ${accionesHtml}
         </tr>`; 
     }); 
+
+    if (countNodos === 0) {
+        let colSpan = rAct === 'consultor' ? 6 : 5;
+        b.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; padding:25px; color:#64748b; font-family:'Inter',sans-serif;"><i class="fas fa-circle-info" style="color:var(--sidebar-active); font-size:1.1rem; margin-right:6px;"></i> No se han registrado empresas.</td></tr>`;
+    }
+}
+
+function renderizarTablaColaboradores() {
+    const b = document.getElementById('tablaColaboradoresBody'); if(!b) return; b.innerHTML = "";
+    const rAct = rolActualSesion.toLowerCase();
+    
+    let countColabs = 0;
+    cacheUsuarios.forEach(u => {
+        // Solo mostrar colaboradores/usuarios (los que NO tienen encargado registrado)
+        if (u.encargado && u.encargado.trim() !== '') return;
+        
+        countColabs++;
+        let contacto = `<div><i class="fas fa-envelope" style="color:#94a3b8;"></i> ${u.email}</div>`;
+        if (u.telefono_principal) {
+            contacto += `<div style="margin-top:2px;"><i class="fas fa-phone" style="color:#94a3b8;"></i> ${u.telefono_principal}</div>`;
+        }
+        
+        const esActivo = parseInt(u.activo) === 1;
+        const estatusBadge = `<span class="badge ${esActivo ? 'green' : 'red'}">${esActivo ? 'Activo' : 'Suspendido'}</span>`;
+
+        let accionesHtml = "";
+        if (rAct === 'consultor') {
+            let btnEditar = `<button class="btn-action edit" onclick="abrirEditarNodo('${u.cod}', '${u.nombre.replace(/'/g, "\\'")}', '', '', '${u.email}', '${u.email_adicional || ''}', '${u.telefono_principal || ''}', '${u.telefono_adicional || ''}', '', '', '${u.rol || ''}')"><i class="fas fa-edit"></i> Editar</button>`;
+            accionesHtml = `<td class="columna-acciones-consultor">${btnEditar}</td>`;
+        }
+
+        b.innerHTML += `<tr>
+            <td><code>${u.cod}</code></td>
+            <td><strong>${u.nombre}</strong></td>
+            <td>${u.email}</td>
+            <td>${contacto}</td>
+            <td><span class="badge role">${u.rol || 'Colaborador'}</span></td>
+            <td>${estatusBadge}</td>
+            ${accionesHtml}
+        </tr>`;
+    });
+    
+    if (countColabs === 0) {
+        let colSpan = rAct === 'consultor' ? 7 : 6;
+        b.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; padding:20px; color:#64748b;">No existen usuarios / colaboradores registrados.</td></tr>`;
+    }
 }
 
 async function cargarUsuariosCliente() { 
-    const r = await fetch(urlProcesador, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'listar_usuarios', empresa_cod: empresaCod }) }); 
+    const r = await fetch(urlProcesador, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+            accion: 'listar_usuarios', 
+            empresa_cod: empresaCod,
+            rol_ejecutor: rolActualSesion
+        }) 
+    }); 
     const res = await r.json();
     if(res.status === 'success') { 
         cacheUsuarios = res.data;
         renderizarTablaUsuarios();
+        renderizarTablaColaboradores();
     } 
+}
+
+// =================================================================
+// 🛠️ ACCIONES DE EDICIÓN Y SUSPENSIÓN DE NODOS (CONSULTOR)
+// =================================================================
+function abrirEditarNodo(cod, nombre, encargado, directorEmail, email, emailAdicional, telPrincipal, telAdicional, direccion, coordenadas, rol) {
+    const modal = document.getElementById('modalEditarNodo');
+    if (!modal) return;
+
+    // Cargar campos básicos
+    document.getElementById('editCodNodo').value = cod;
+    document.getElementById('editNombre').value = nombre;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editEmailPersonal').value = emailAdicional;
+    document.getElementById('editTelEmpresa').value = telPrincipal;
+    document.getElementById('editTelPersonal').value = telAdicional;
+    document.getElementById('editPass').value = ''; // Contraseña vacía por defecto
+    document.getElementById('editLogo').value = ''; // Logo vacío por defecto
+
+    const wrapperEncargado = document.getElementById('wrapperEditEncargado');
+    const wrapperDirectorEmail = document.getElementById('wrapperEditDirectorEmail');
+    const wrapperDireccion = document.getElementById('wrapperEditDireccion');
+    const wrapperCoordenadas = document.getElementById('wrapperEditCoordenadas');
+    const wrapperLogo = document.getElementById('wrapperEditLogo');
+    const wrapperRol = document.getElementById('wrapperEditRol');
+
+    // Determinar si es colaborador o sucursal
+    // Si viene encargado, es una sucursal/nodo
+    if (encargado || direccion || coordenadas) {
+        // Mostrar campos de sucursal
+        if (wrapperEncargado) wrapperEncargado.style.display = '';
+        if (wrapperDirectorEmail) wrapperDirectorEmail.style.display = '';
+        if (wrapperDireccion) wrapperDireccion.style.display = '';
+        if (wrapperCoordenadas) wrapperCoordenadas.style.display = '';
+        if (wrapperLogo) wrapperLogo.style.display = '';
+        if (wrapperRol) wrapperRol.style.display = 'none';
+
+        document.getElementById('editEncargado').value = encargado;
+        document.getElementById('editDirectorEmail').value = directorEmail;
+        document.getElementById('editDireccion').value = direccion;
+        document.getElementById('editCoordenadas').value = coordenadas;
+        document.getElementById('editRolOriginal').value = 'Tipo 1';
+    } else {
+        // Mostrar campos de colaborador
+        if (wrapperEncargado) wrapperEncargado.style.display = 'none';
+        if (wrapperDirectorEmail) wrapperDirectorEmail.style.display = 'none';
+        if (wrapperDireccion) wrapperDireccion.style.display = 'none';
+        if (wrapperCoordenadas) wrapperCoordenadas.style.display = 'none';
+        if (wrapperLogo) wrapperLogo.style.display = 'none';
+        if (wrapperRol) wrapperRol.style.display = '';
+
+        document.getElementById('editEncargado').value = '';
+        document.getElementById('editDirectorEmail').value = '';
+        document.getElementById('editDireccion').value = '';
+        document.getElementById('editCoordenadas').value = '';
+        document.getElementById('editRol').value = rol || 'Tipo 1';
+        document.getElementById('editRolOriginal').value = rol;
+    }
+
+    modal.style.display = 'flex';
+}
+
+function cerrarModalEditarNodo() {
+    const modal = document.getElementById('modalEditarNodo');
+    if (modal) modal.style.display = 'none';
+    const form = document.getElementById('edicionNodoForm');
+    if (form) form.reset();
+}
+
+async function suspenderNodoCliente(cod) {
+    if (!confirm(`¿Estás seguro de que deseas cambiar el estatus del usuario/nodo con código ${cod}?`)) {
+        return;
+    }
+    
+    try {
+        const r = await fetch(urlProcesador, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                accion: 'suspender_nodo_cliente',
+                cod_nodo: cod,
+                rol_ejecutor: rolActualSesion
+            })
+        });
+        const res = await r.json();
+        alert(res.message);
+        if (res.status === 'success') {
+            cargarUsuariosCliente();
+        }
+    } catch (e) {
+        console.error(e);
+        alert("Error de red al intentar cambiar el estatus.");
+    }
+}
+
+// Inicialización del submit del formulario de edición del nodo
+if (document.getElementById('edicionNodoForm')) {
+    document.getElementById('edicionNodoForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const pass = document.getElementById('editPass').value.trim();
+        if (pass !== "") {
+            const passErr = validarPasswordComplejidad(pass);
+            if (passErr) {
+                alert("Seguridad de Contraseña: " + passErr);
+                return;
+            }
+        }
+        
+        const wrapperRol = document.getElementById('wrapperEditRol');
+        const rolOriginal = document.getElementById('editRolOriginal').value;
+        const rolFinal = (wrapperRol.style.display === 'none') ? rolOriginal : document.getElementById('editRol').value;
+
+        const formData = new FormData();
+        formData.append('accion', 'editar_nodo_cliente');
+        formData.append('rol_ejecutor', rolActualSesion);
+        formData.append('cod_nodo', document.getElementById('editCodNodo').value);
+        formData.append('nombre', document.getElementById('editNombre').value.trim());
+        formData.append('encargado', document.getElementById('editEncargado').value.trim());
+        formData.append('director_email', document.getElementById('editDirectorEmail').value.trim());
+        formData.append('email', document.getElementById('editEmail').value.trim());
+        formData.append('email_adicional', document.getElementById('editEmailPersonal').value.trim());
+        formData.append('telefono_principal', document.getElementById('editTelEmpresa').value.trim());
+        formData.append('telefono_adicional', document.getElementById('editTelPersonal').value.trim());
+        formData.append('direccion', document.getElementById('editDireccion').value.trim());
+        formData.append('coordenadas', document.getElementById('editCoordenadas').value.trim());
+        formData.append('rol', rolFinal);
+        if (pass !== "") {
+            formData.append('pass', pass);
+        }
+        
+        const logoFile = document.getElementById('editLogo').files[0];
+        if (logoFile) {
+            formData.append('logo', logoFile);
+        }
+
+        try {
+            const r = await fetch(urlProcesador, {
+                method: 'POST',
+                body: formData
+            });
+            const res = await r.json();
+            alert(res.message);
+            if (res.status === 'success') {
+                cerrarModalEditarNodo();
+                cargarUsuariosCliente();
+                cargarColabEmpresasSelect();
+                cargarMisNodosSelect();
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error de red al intentar actualizar los datos.");
+        }
+    });
 }
 
 // =================================================================
@@ -756,18 +1049,14 @@ if(document.getElementById('usuarioClienteForm')) {
         });
         const res = await r.json();
         if(res.status === 'success') {
-            alert("¡Nodo / Empresa registrado exitosamente!");
+            alert("La consultora ha sido creada exitosamente.");
             document.getElementById('usuarioClienteForm').reset();
-            const wrapperEmpresa = document.getElementById('wrapperCamposEmpresa');
-            if (wrapperEmpresa && rolActualSesion.toLowerCase() === 'consultor') {
-                wrapperEmpresa.style.display = 'block'; // Asegurar que permanezca visible
-                if (clienteMap) {
-                    // Reset marker to default
-                    const defaultCoords = [19.432608, -99.133208];
-                    clienteMarker.setLatLng(defaultCoords);
-                    clienteMap.setView(defaultCoords, 13);
-                }
+            
+            if (rolActualSesion.toLowerCase() === 'consultor') {
+                // Recalcular ID
+                await cargarIdClienteSucursal();
             }
+            
             cargarUsuariosCliente();
             cargarColabEmpresasSelect();
             cargarMisNodosSelect();
@@ -935,5 +1224,13 @@ window.addEventListener('load', () => {
         preloader.style.opacity = '0';
         preloader.style.visibility = 'hidden';
         setTimeout(() => { preloader.remove(); }, 400);
+    }
+    
+    // Escuchar cambios en el input del nombre de la sucursal para previsualizar ID único
+    const inputNombreSuc = document.getElementById('userNombre');
+    if (inputNombreSuc) {
+        inputNombreSuc.addEventListener('input', () => {
+            cargarIdClienteSucursal(inputNombreSuc.value.trim());
+        });
     }
 });

@@ -23,6 +23,15 @@ if ($conexion->connect_error) {
 
 $conexion->set_charset("utf8");
 
+
 // Cargar validaciones globales
 require_once __DIR__ . "/validaciones.php";
+
+// =================================================================
+// CONFIGURACIÓN DE CORREO SMTP (GMAIL) PARA ALERTAS AUTOMÁTICAS
+// =================================================================
+define('SMTP_HOST', 'smtp.gmail.com');
+define('SMTP_PORT', 587);
+define('SMTP_USER', 'berckwhiler@gmail.com');
+define('SMTP_PASS', 'vwuxefgktivbiwal');
 ?>

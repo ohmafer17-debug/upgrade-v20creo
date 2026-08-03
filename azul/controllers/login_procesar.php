@@ -85,6 +85,8 @@ if ($resAdmin && $resAdmin->num_rows > 0) {
         $_SESSION['sesion_activa'] = true;
         $_SESSION['usuario_cod'] = 'UPS-STAFF';
         $_SESSION['usuario_rol'] = $rowAdmin['rol'];
+        $_SESSION['usuario_email'] = $rowAdmin['email'];
+        $_SESSION['usuario_nombre'] = $rowAdmin['nombre'];
 
         echo json_encode([
             "status" => "success",
@@ -109,7 +111,7 @@ $stmtAdmin->close();
 // =================================================================
 // PASO 2: VERIFICAR EMPRESAS CLIENTES / SUCURSALES (SENTENCIAS PREPARADAS)
 // =================================================================
-$stmtCliente = $conexion->prepare("SELECT cod, nombre, email, pass, rol, activo FROM empresas_clientes WHERE email = ? LIMIT 1");
+$stmtCliente = $conexion->prepare("SELECT cod, nombre, email, pass, rol, activo, encargado FROM empresas_clientes WHERE email = ? LIMIT 1");
 $stmtCliente->bind_param("s", $email_post);
 $stmtCliente->execute();
 $resCliente = $stmtCliente->get_result();
@@ -132,10 +134,13 @@ if ($resCliente && $resCliente->num_rows > 0) {
         $_SESSION['sesion_activa'] = true;
         $_SESSION['usuario_cod'] = $rowCliente['cod'];
         $_SESSION['usuario_rol'] = $rol_real_bd;
+        $_SESSION['usuario_email'] = $rowCliente['email'];
+        $_SESSION['usuario_nombre'] = $rowCliente['nombre'];
+        $_SESSION['usuario_encargado'] = isset($rowCliente['encargado']) ? $rowCliente['encargado'] : '';
 
         echo json_encode([
             "status" => "success",
-            "message" => "¡Acceso autorizado al portal corporativo!",
+            "message" => "Inicio de sesión exitoso",
             "id_cliente"     => $rowCliente['cod'],
             "nombre_usuario" => $rowCliente['nombre'],
             "rol_usuario"    => $rol_real_bd,
@@ -143,7 +148,9 @@ if ($resCliente && $resCliente->num_rows > 0) {
                 "cod"    => $rowCliente['cod'],
                 "nombre" => $rowCliente['nombre'],
                 "email"  => $rowCliente['email'],
-                "rol"    => $rol_real_bd
+                "rol"    => $rol_real_bd,
+                "encargado" => isset($rowCliente['encargado']) ? $rowCliente['encargado'] : '',
+                "logo" => isset($rowCliente['logo']) ? $rowCliente['logo'] : ''
             ]
         ]);
         exit;

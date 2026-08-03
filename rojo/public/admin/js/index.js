@@ -1,5 +1,18 @@
 // 🚀 DETECCIÓN DINÁMICA DE ENTORNO (LOCAL VS PRODUCCIÓN)
-const base_url = window.location.origin + (window.location.hostname === 'localhost' ? '/upgrade_systems' : '');
+const base_url = (() => {
+    let subFolder = '';
+    const pathParts = window.location.pathname.split('/');
+    const publicIndex = pathParts.indexOf('public');
+    if (publicIndex > 0) {
+        subFolder = '/' + pathParts.slice(1, publicIndex).join('/');
+    } else {
+        const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname) || window.location.hostname.startsWith('192.168.');
+        if (isLocal && pathParts.length > 1 && pathParts[1] !== '') {
+            subFolder = '/' + pathParts[1];
+        }
+    }
+    return window.location.origin + subFolder;
+})();
 const urlProcesadorAdmin = `${base_url}/controllers/ups_procesar.php`;
 let cacheLicencias = [];
 let adminMap = null;
@@ -68,10 +81,6 @@ function cambiarVistaUps(vista) {
     if (vista === 'licencias') { inicializarFiltroEmpresas(); cargarLicenciasOFiltrarRoles(); }
     if (vista === 'admins') { cargarAdministradoresUps(); }
     
-    if (vista === 'consultores') {
-        initConsMap();
-        setTimeout(() => { if (consMap) consMap.invalidateSize(); }, 150);
-    }
     if (vista === 'registrar') {
         initAdminMaps();
         setTimeout(() => { if (adminMap) adminMap.invalidateSize(); }, 150);
@@ -97,31 +106,7 @@ async function cerrarSesionMaster() {
 
 function evaluarFlujoResponsableNacional(valor) {}
 
-async function cargarCatalogoResponsables() {
-    const select = document.getElementById('filtroNombresRNSelect');
-    if (!select) return;
-    select.innerHTML = `<option value="NINGUNO">-- Cargando catálogo de Consultores... --</option>`;
-    try {
-        const r = await fetch(urlProcesadorAdmin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'listar_licencias_globales', filtro_empresa: 'TODAS' }) });
-        const res = await r.json();
-        if (res.status === 'success') {
-            listaResponsablesCache = res.data.filter(u => u.rol.toLowerCase() === 'consultor');
-            select.innerHTML = `<option value="NINGUNO">-- Seleccione un Consultor del catálogo --</option>`;
-            listaResponsablesCache.forEach(u => { select.innerHTML += `<option value="${u.usuario_responsable}">${u.nombre_comercial} (ID: ${u.empresa_cod})</option>`; });
-        }
-    } catch (err) { console.error(err); }
-}
 
-function actualizarPrevisualizacionRN(emailElegido) {
-    const box = document.getElementById('previewRNBox');
-    if (emailElegido === 'NINGUNO') { box.style.display = "none"; return; }
-    
-    const nodoSuperior = listaResponsablesCache.find(u => u.usuario_responsable === emailElegido);
-    if (nodoSuperior) {
-        box.innerHTML = `<strong>👤 Consultor Superior:</strong> ${nodoSuperior.nombre_comercial}<br><strong>📧 Correo Enlace:</strong> ${emailElegido}`;
-        box.style.display = "block";
-    }
-}
 
 function validarPasswordComplejidad(password) {
     if (password.length < 10) {
@@ -164,98 +149,98 @@ function validarPasswordComplejidad(password) {
     return null;
 }
 
-document.getElementById('registroConsultorForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const pass = document.getElementById('consPass').value.trim();
-    const passErr = validarPasswordComplejidad(pass);
-    if (passErr) {
-        alert("Seguridad de Contraseña: " + passErr);
-        return;
-    }
 
-    const formData = new FormData();
-    formData.append('accion', 'registrar_nueva_empresa');
-    formData.append('empresa_nombre', document.getElementById('consNombre').value.trim());
-    formData.append('empresa_cod', document.getElementById('consCod').value.trim());
-    formData.append('encargado', document.getElementById('consEncargado').value.trim());
-    formData.append('email_usuario', document.getElementById('consEmail').value.trim());
-    formData.append('director_email', '');
-    formData.append('email_adicional', document.getElementById('consEmailPersonal').value.trim());
-    formData.append('telefono_principal', document.getElementById('consTelEmpresa').value.trim());
-    formData.append('telefono_adicional', document.getElementById('consTelPersonal').value.trim());
-    formData.append('direccion', document.getElementById('consDireccion').value.trim());
-    formData.append('coordenadas', document.getElementById('consCoordenadas').value.trim());
-    formData.append('rol_inicial', 'Consultor');
-    formData.append('pass_usuario', pass);
-    formData.append('rn_vinculado', ''); // Raíz/Independiente
-    formData.append('usuario_ejecutor_email', localStorage.getItem('ups_sesion_email') || '');
 
-    const logoFile = document.getElementById('consLogo').files[0];
-    if (logoFile) {
-        formData.append('logo', logoFile);
-    }
+let numeroAleatorioRegistro = Math.floor(100 + Math.random() * 900);
 
-    const r = await fetch(urlProcesadorAdmin, { method: 'POST', body: formData });
-    const res = await r.json();
-    if (res.status === 'success') { 
-        alert(res.message); 
-        document.getElementById('registroConsultorForm').reset(); 
-        cambiarVistaUps('licencias'); 
-    } else { 
-        alert(res.message); 
+function regenerarNumeroAleatorio() {
+    numeroAleatorioRegistro = Math.floor(100 + Math.random() * 900);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Rellenar datos del usuario activo y su rol en la cabecera flotante
+    const sesionNombre = localStorage.getItem('ups_sesion_nombre') || 'Usuario Staff';
+    const sesionRol = localStorage.getItem('cliente_sesion_rol') || 'Staff';
+    const elNombre = document.getElementById('headerNombreUsuario');
+    const elRol = document.getElementById('headerRolUsuario');
+    if (elNombre) elNombre.textContent = sesionNombre;
+    if (elRol) elRol.textContent = sesionRol;
+
+    const empNombreInput = document.getElementById('empresaNombre');
+    if (empNombreInput) {
+        empNombreInput.addEventListener('input', function() {
+            const nombre = this.value;
+            const codInput = document.getElementById('empresaCod');
+            if (!codInput) return;
+            
+            if (!nombre.trim()) {
+                codInput.value = '';
+                return;
+            }
+
+            let limpio = nombre.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            limpio = limpio.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+
+            let letras = limpio;
+            if (letras.length < 3) {
+                letras = (letras + "XYZ").substring(0, 4);
+            } else {
+                letras = letras.substring(0, 4);
+            }
+
+            codInput.value = `${letras}-${numeroAleatorioRegistro}`;
+        });
     }
 });
+
 
 document.getElementById('registroEmpresaForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
-    const parentSelect = document.getElementById('filtroNombresRNSelect').value;
-    if (parentSelect === 'NINGUNO') {
-        alert("Por favor, seleccione un Consultor / Organización Superior.");
-        return;
-    }
+    try {
+        const pass = document.getElementById('passUsuario').value.trim();
+        const passErr = validarPasswordComplejidad(pass);
+        if (passErr) {
+            alert("Seguridad de Contraseña: " + passErr);
+            return;
+        }
 
-    const pass = document.getElementById('passUsuario').value.trim();
-    const passErr = validarPasswordComplejidad(pass);
-    if (passErr) {
-        alert("Seguridad de Contraseña: " + passErr);
-        return;
-    }
+        const formData = new FormData();
+        formData.append('accion', 'registrar_nueva_empresa');
+        formData.append('empresa_nombre', document.getElementById('empresaNombre').value.trim());
+        formData.append('empresa_cod', document.getElementById('empresaCod').value.trim().toUpperCase());
+        formData.append('encargado', document.getElementById('empresaEncargado').value.trim());
+        formData.append('email_usuario', document.getElementById('emailUsuario').value.trim());
+        formData.append('director_email', '');
+        formData.append('email_adicional', document.getElementById('emailUsuarioAdicional').value.trim());
+        formData.append('telefono_principal', document.getElementById('telefonoUsuarioPrincipal').value.trim());
+        formData.append('telefono_adicional', document.getElementById('telefonoUsuarioAdicional').value.trim());
+        formData.append('direccion', document.getElementById('empresaDireccion').value.trim());
+        formData.append('coordenadas', document.getElementById('empresaCoordenadas').value.trim());
+        formData.append('rol_inicial', 'Consultor');
+        formData.append('pass_usuario', pass);
+        formData.append('rn_vinculado', 'NINGUNO');
+        formData.append('usuario_ejecutor_email', localStorage.getItem('ups_sesion_email') || '');
 
-    const formData = new FormData();
-    formData.append('accion', 'registrar_nueva_empresa');
-    formData.append('empresa_nombre', document.getElementById('empresaNombre').value.trim());
-    formData.append('empresa_cod', ''); // Autocargado en backend
-    formData.append('encargado', document.getElementById('empresaEncargado').value.trim());
-    formData.append('email_usuario', document.getElementById('emailUsuario').value.trim());
-    formData.append('director_email', document.getElementById('empresaDirectorEmail').value.trim());
-    formData.append('email_adicional', document.getElementById('emailUsuarioAdicional').value.trim());
-    formData.append('telefono_principal', document.getElementById('telefonoUsuarioPrincipal').value.trim());
-    formData.append('telefono_adicional', document.getElementById('telefonoUsuarioAdicional').value.trim());
-    formData.append('direccion', document.getElementById('empresaDireccion').value.trim());
-    formData.append('coordenadas', document.getElementById('empresaCoordenadas').value.trim());
-    formData.append('rol_inicial', 'Tipo 1');
-    formData.append('pass_usuario', pass);
-    formData.append('rn_vinculado', parentSelect);
-    formData.append('usuario_ejecutor_email', localStorage.getItem('ups_sesion_email') || '');
+        const logoFile = document.getElementById('empresaLogo').files[0];
+        if (logoFile) formData.append('logo', logoFile);
 
-    const logoFile = document.getElementById('empresaLogo').files[0];
-    if (logoFile) {
-        formData.append('logo', logoFile);
-    }
-
-    const r = await fetch(urlProcesadorAdmin, { method: 'POST', body: formData });
-    const res = await r.json();
-    if (res.status === 'success') { 
-        alert(res.message); 
-        document.getElementById('registroEmpresaForm').reset(); 
-        document.getElementById('previewRNBox').style.display = "none"; 
-        cambiarVistaUps('licencias'); 
-    } else { 
-        alert(res.message); 
+        const r = await fetch(urlProcesadorAdmin, { method: 'POST', body: formData });
+        const res = await r.json();
+        if (res.status === 'success') {
+            alert(res.message);
+            document.getElementById('registroEmpresaForm').reset();
+            regenerarNumeroAleatorio();
+            cambiarVistaUps('licencias');
+        } else {
+            alert(res.message);
+        }
+    } catch (error) {
+        console.error("Error submitting company form:", error);
+        alert("Error al procesar el formulario: " + error.message);
     }
 });
+
+
 
 async function inicializarFiltroEmpresas() {
     const r = await fetch(urlProcesadorAdmin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accion: 'obtener_solo_empresas_raiz', usuario_ejecutor_email: localStorage.getItem('ups_sesion_email') || '' }) });
@@ -282,24 +267,140 @@ async function cargarLicenciasOFiltrarRoles() {
     const res = await r.json();
     if (res.status === 'success') {
         cacheLicencias = res.data;
-        const t = document.getElementById('tablaLicenciasBody'); t.innerHTML = "";
-        const rolActive = localStorage.getItem('cliente_sesion_rol') || 'Invitado';
-
-        res.data.forEach((emp, index) => {
-            const esActivo = parseInt(emp.activo) === 1;
-            const logoHtml = emp.logo ? `<img src="${base_url}/public/uploads/logos/${emp.logo}" class="logo-thumbnail">` : `<i class="fas fa-building" style="color: #94a3b8; font-size: 1.25rem; vertical-align: middle; margin-right: 12px;"></i>`;
-            let botonLlamar = emp.telefono_principal ? `<a href="tel:${emp.telefono_principal}" class="btn-action call"><i class="fas fa-phone"></i> Llamar</a>` : '';
-            
-            let accionesHtml = '';
-            if (rolActive !== 'Invitado') {
-                accionesHtml += `<button class="btn-action edit" onclick="prepararEdicionEmpresa(${index})"><i class="fas fa-edit"></i> Editar</button>`;
-                accionesHtml += `<button class="btn-action suspend" onclick="cambiarEstatusEmpresa('${emp.id}', ${emp.activo})"><i class="fas fa-power-off"></i> ${esActivo ? 'Suspender' : 'Activar'}</button>`;
-            }
-            accionesHtml += botonLlamar;
-
-            t.innerHTML += `<tr><td>${logoHtml}<code>${emp.empresa_cod}</code></td><td><strong>${emp.nombre_comercial}</strong></td><td>${emp.usuario_responsable}</td><td><span class="badge role">${emp.rol}</span></td><td><span class="badge ${esActivo ? 'green' : 'red'}">${esActivo ? 'Activa' : 'Suspendida'}</span></td><td class="actions-cell">${accionesHtml}</td></tr>`;
-        });
+        // Limpiar inputs de búsqueda local al recargar de servidor
+        document.getElementById('busquedaLicenciaId').value = "";
+        document.getElementById('busquedaLicenciaNombre').value = "";
+        renderizarLicencias(cacheLicencias);
     }
+}
+
+function renderizarLicencias(lista) {
+    const t = document.getElementById('tablaLicenciasBody'); 
+    t.innerHTML = "";
+    const rolActive = localStorage.getItem('cliente_sesion_rol') || 'Invitado';
+
+    const roots = [];
+    const children = [];
+    lista.forEach((emp, index) => {
+        const origIndex = cacheLicencias.findIndex(c => c.id === emp.id);
+        const empCopy = { ...emp, originalIndex: origIndex };
+        if (emp.rol && emp.rol.toLowerCase() === 'consultor') {
+            roots.push(empCopy);
+        } else {
+            children.push(empCopy);
+        }
+    });
+
+    const orderedList = [];
+    roots.forEach(root => {
+        orderedList.push(root);
+        const linked = children.filter(child => child.empresa_cod.startsWith(root.empresa_cod + "/"));
+        linked.forEach(child => {
+            orderedList.push(child);
+            const childIdx = children.indexOf(child);
+            if (childIdx > -1) children.splice(childIdx, 1);
+        });
+    });
+    children.forEach(orphan => {
+        orderedList.push(orphan);
+    });
+
+    orderedList.forEach(emp => {
+        const esActivo = parseInt(emp.activo) === 1;
+        const logoHtml = emp.logo ? `<img src="${base_url}/public/uploads/logos/${emp.logo}" class="logo-thumbnail">` : `<i class="fas fa-building" style="color: #94a3b8; font-size: 1.25rem; vertical-align: middle; margin-right: 12px;"></i>`;
+        let botonLlamar = emp.telefono_principal ? `<a href="tel:${emp.telefono_principal}" class="btn-action call"><i class="fas fa-phone"></i> Llamar</a>` : '';
+        
+        let accionesHtml = '';
+        if (rolActive !== 'Invitado') {
+            accionesHtml += `<button class="btn-action edit" onclick="prepararEdicionEmpresa(${emp.originalIndex})"><i class="fas fa-edit"></i> Editar</button>`;
+            accionesHtml += `<button class="btn-action suspend" onclick="cambiarEstatusEmpresa('${emp.id}', ${emp.activo})"><i class="fas fa-power-off"></i> ${esActivo ? 'Suspender' : 'Activar'}</button>`;
+        }
+        accionesHtml += botonLlamar;
+
+        let rowStyle = '';
+        let indentHtml = '';
+        if (emp.rol && emp.rol.toLowerCase() === 'consultor') {
+            rowStyle = 'style="background: #f1f5f9; font-weight: 600;"';
+        } else {
+            rowStyle = 'style="background: #ffffff;"';
+            indentHtml = '<span style="color: #94a3b8; font-family: monospace; margin-right: 8px; font-weight: bold; font-size: 1.1rem;">└─</span>';
+        }
+
+        let consultorSublabel = '';
+        if (emp.rol && emp.rol.toLowerCase() !== 'consultor') {
+            const parentCode = emp.empresa_cod.split('/')[0];
+            const parentEmp = cacheLicencias.find(parent => parent.empresa_cod === parentCode);
+            if (parentEmp) {
+                consultorSublabel = `<br><small style="color: #64748b; font-size: 0.8rem; margin-left: 20px;">👤 Consultor: ${parentEmp.nombre_comercial}</small>`;
+            }
+        }
+
+        const fechaVal = emp.fecha_creacion ? emp.fecha_creacion.split(' ')[0] : 'N/A';
+        const creadorVal = emp.creado_por ? emp.creado_por : 'Sistema';
+
+        t.innerHTML += `<tr ${rowStyle}>
+            <td>${logoHtml}<code>${emp.empresa_cod}</code></td>
+            <td>${indentHtml}<strong>${emp.nombre_comercial}</strong>${consultorSublabel}</td>
+            <td>${emp.usuario_responsable}</td>
+            <td><span class="badge role">${emp.rol}</span></td>
+            <td><span style="font-family: monospace; font-size: 0.85rem; color: #475569;">${fechaVal}</span></td>
+            <td><span style="font-family: monospace; font-size: 0.85rem; color: #475569;">${creadorVal}</span></td>
+            <td><span class="badge ${esActivo ? 'green' : 'red'}">${esActivo ? 'Activa' : 'Suspendida'}</span></td>
+            <td class="actions-cell">${accionesHtml}</td>
+        </tr>`;
+    });
+}
+
+function filtrarTablaLicenciasLocal() {
+    const queryId = document.getElementById('busquedaLicenciaId').value.trim().toLowerCase();
+    const queryNombre = document.getElementById('busquedaLicenciaNombre').value.trim().toLowerCase();
+
+    const listaFiltrada = cacheLicencias.filter(emp => {
+        const matchesId = emp.empresa_cod.toLowerCase().includes(queryId);
+        const matchesNombre = emp.nombre_comercial.toLowerCase().includes(queryNombre);
+        return matchesId && matchesNombre;
+    });
+
+    renderizarLicencias(listaFiltrada);
+}
+
+function exportarLicenciasCSV() {
+    const queryId = document.getElementById('busquedaLicenciaId').value.trim().toLowerCase();
+    const queryNombre = document.getElementById('busquedaLicenciaNombre').value.trim().toLowerCase();
+
+    const listaFiltrada = cacheLicencias.filter(emp => {
+        const matchesId = emp.empresa_cod.toLowerCase().includes(queryId);
+        const matchesNombre = emp.nombre_comercial.toLowerCase().includes(queryNombre);
+        return matchesId && matchesNombre;
+    });
+
+    if (listaFiltrada.length === 0) {
+        alert("No hay registros para exportar.");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "Código Interno,Nombre de la Cuenta,Correo Electrónico,Rol en Sistema,Fecha de Creación,Creado Por,Estatus\n";
+
+    listaFiltrada.forEach(emp => {
+        const esActivo = parseInt(emp.activo) === 1 ? 'Activa' : 'Suspendida';
+        const fechaVal = emp.fecha_creacion ? emp.fecha_creacion : 'N/A';
+        const creadorVal = emp.creado_por ? emp.creado_por : 'Sistema';
+        
+        const cleanNombre = `"${emp.nombre_comercial.replace(/"/g, '""')}"`;
+        const cleanRol = `"${emp.rol.replace(/"/g, '""')}"`;
+        const cleanCreador = `"${creadorVal.replace(/"/g, '""')}"`;
+
+        csvContent += `${emp.empresa_cod},${cleanNombre},${emp.usuario_responsable},${cleanRol},${fechaVal},${cleanCreador},${esActivo}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Reporte_Licencias_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function prepararEdicionEmpresa(index) {
@@ -309,7 +410,6 @@ function prepararEdicionEmpresa(index) {
     document.getElementById('editEmpresaNombre').value = emp.nombre_comercial;
     document.getElementById('editEmpresaEncargado').value = emp.encargado || '';
     document.getElementById('editEmpresaEmail').value = emp.usuario_responsable;
-    document.getElementById('editEmpresaDirectorEmail').value = emp.director_email || '';
     document.getElementById('editEmpresaEmailAdicional').value = emp.email_adicional || '';
     document.getElementById('editEmpresaTelPrincipal').value = emp.telefono_principal || '';
     document.getElementById('editEmpresaTelAdicional').value = emp.telefono_adicional || '';
@@ -334,13 +434,12 @@ function prepararEdicionEmpresa(index) {
 
     document.getElementById('box-editar-empresa').style.display = 'block';
     document.getElementById('box-editar-empresa').scrollIntoView({ behavior: 'smooth' });
-    
-    // Actualizar posición del mapa de edición
-    updateEditMapPosition(emp.coordenadas);
 }
 
 function cancelarEdicionEmpresa() { 
     document.getElementById('box-editar-empresa').style.display = 'none'; 
+    document.getElementById('editEmpresaPass').value = '';
+    document.getElementById('editEmpresaPassConfirm').value = '';
     const previewBox = document.getElementById('editLogoPreview');
     if (previewBox) previewBox.style.display = 'none';
 }
@@ -348,7 +447,12 @@ function cancelarEdicionEmpresa() {
 document.getElementById('edicionEmpresaForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const pass = document.getElementById('editEmpresaPass').value.trim();
+    const passConfirm = document.getElementById('editEmpresaPassConfirm').value.trim();
     if (pass !== "") {
+        if (pass !== passConfirm) {
+            alert("Error: Las contraseñas ingresadas no coinciden.");
+            return;
+        }
         const passErr = validarPasswordComplejidad(pass);
         if (passErr) {
             alert("Seguridad de Contraseña: " + passErr);
@@ -362,7 +466,7 @@ document.getElementById('edicionEmpresaForm').addEventListener('submit', async f
     formData.append('nombre', document.getElementById('editEmpresaNombre').value.trim());
     formData.append('encargado', document.getElementById('editEmpresaEncargado').value.trim());
     formData.append('email', document.getElementById('editEmpresaEmail').value.trim());
-    formData.append('director_email', document.getElementById('editEmpresaDirectorEmail').value.trim());
+    formData.append('director_email', '');
     formData.append('email_adicional', document.getElementById('editEmpresaEmailAdicional').value.trim());
     formData.append('telefono_principal', document.getElementById('editEmpresaTelPrincipal').value.trim());
     formData.append('telefono_adicional', document.getElementById('editEmpresaTelAdicional').value.trim());
@@ -546,259 +650,20 @@ async function cambiarEstatusAdmin(id, estatusActual) {
     }
 }
 
-// 🚀 GEOCODIFICACIÓN DINÁMICA BIDIRECCIONAL (OPENSTREETMAP NOMINATIM)
-async function geocodificarDireccion(idDireccion, idCoordenadas) {
-    const direccionVal = document.getElementById(idDireccion).value.trim();
-    if (!direccionVal || direccionVal.length < 5) return;
-    
-    const inputCoordenadas = document.getElementById(idCoordenadas);
-    
-    // Mostrar indicador de carga / progreso
-    let indicator = document.getElementById(idDireccion + '_geo_indicator');
-    if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.id = idDireccion + '_geo_indicator';
-        indicator.className = 'geocoded-indicator';
-        document.getElementById(idDireccion).parentNode.appendChild(indicator);
-    }
-    indicator.style.display = 'block';
-    indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando coordenadas en mapa...';
-    indicator.style.background = '#eff6ff';
-    indicator.style.color = '#1d4ed8';
-    indicator.style.borderColor = '#bfdbfe';
+// 🚀 GEOCODIFICACIÓN DESACTIVADA: El sistema ahora almacena URLs de Google Maps directamente
+async function geocodificarDireccion(idDireccion, idCoordenadas) {}
+async function geocodificarCoordenadas(idCoordenadas, idDireccion) {}
 
-    try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccionVal)}&limit=1`, {
-            headers: { 'Accept': 'application/json', 'User-Agent': 'UpgradeSystems-App' }
-        });
-        if (!r.ok) throw new Error("Error en red");
-        const data = await r.json();
-        if (data && data.length > 0) {
-            const lat = parseFloat(data[0].lat).toFixed(6);
-            const lon = parseFloat(data[0].lon).toFixed(6);
-            inputCoordenadas.value = `${lat}, ${lon}`;
-            
-            indicator.innerHTML = `<i class="fas fa-circle-check"></i> Coordenadas sincronizadas: ${lat}, ${lon}`;
-            indicator.style.background = '#dcfce7';
-            indicator.style.color = '#15803d';
-            indicator.style.borderColor = '#bbf7d0';
-        } else {
-            indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No se encontraron coordenadas exactas en OpenStreetMap.';
-            indicator.style.background = '#fef3c7';
-            indicator.style.color = '#b45309';
-            indicator.style.borderColor = '#fde68a';
-        }
-    } catch (err) {
-        console.error(err);
-        indicator.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Error de red al consultar mapa de coordenadas.';
-        indicator.style.background = '#fee2e2';
-        indicator.style.color = '#b91c1c';
-        indicator.style.borderColor = '#fca5a5';
-    }
-}
-
-async function geocodificarCoordenadas(idCoordenadas, idDireccion) {
-    const coordsVal = document.getElementById(idCoordenadas).value.trim();
-    if (!coordsVal) return;
-    
-    const inputDireccion = document.getElementById(idDireccion);
-    const parts = coordsVal.split(',').map(c => c.trim());
-    if (parts.length !== 2) return;
-    
-    const lat = parseFloat(parts[0]);
-    const lon = parseFloat(parts[1]);
-    if (isNaN(lat) || isNaN(lon)) return;
-
-    let indicator = document.getElementById(idCoordenadas + '_geo_indicator');
-    if (!indicator) {
-        indicator = document.createElement('div');
-        indicator.id = idCoordenadas + '_geo_indicator';
-        indicator.className = 'geocoded-indicator';
-        document.getElementById(idCoordenadas).parentNode.appendChild(indicator);
-    }
-    indicator.style.display = 'block';
-    indicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Identificando dirección física...';
-    indicator.style.background = '#eff6ff';
-    indicator.style.color = '#1d4ed8';
-    indicator.style.borderColor = '#bfdbfe';
-
-    try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`, {
-            headers: { 'Accept': 'application/json', 'User-Agent': 'UpgradeSystems-App' }
-        });
-        if (!r.ok) throw new Error("Error en red");
-        const data = await r.json();
-        if (data && data.display_name) {
-            inputDireccion.value = data.display_name;
-            
-            indicator.innerHTML = '<i class="fas fa-circle-check"></i> Dirección física identificada y sincronizada.';
-            indicator.style.background = '#dcfce7';
-            indicator.style.color = '#15803d';
-            indicator.style.borderColor = '#bbf7d0';
-        } else {
-            indicator.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Coordenadas fuera de zona urbana o sin nombre.';
-            indicator.style.background = '#fef3c7';
-            indicator.style.color = '#b45309';
-            indicator.style.borderColor = '#fde68a';
-        }
-    } catch (err) {
-        console.error(err);
-        indicator.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Error al geocodificar de reversa.';
-        indicator.style.background = '#fee2e2';
-        indicator.style.color = '#b91c1c';
-        indicator.style.borderColor = '#fca5a5';
-    }
-}
-
-function initAdminMaps() {
-    const mapDiv = document.getElementById('adminMap');
-    if (mapDiv && !adminMap) {
-        const defaultCoords = [19.432608, -99.133208];
-        adminMap = L.map('adminMap').setView(defaultCoords, 13);
-        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 19,
-            attribution: '© Google Maps'
-        }).addTo(adminMap);
-        
-        adminMarker = L.marker(defaultCoords, { draggable: true }).addTo(adminMap);
-        
-        adminMarker.on('dragend', function() {
-            const pos = adminMarker.getLatLng();
-            document.getElementById('empresaCoordenadas').value = `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
-        });
-        
-        adminMap.on('click', function(e) {
-            adminMarker.setLatLng(e.latlng);
-            document.getElementById('empresaCoordenadas').value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-        });
-        
-        document.getElementById('empresaCoordenadas').addEventListener('input', function() {
-            const val = this.value.split(',');
-            if (val.length === 2) {
-                const lat = parseFloat(val[0].trim());
-                const lng = parseFloat(val[1].trim());
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const latlng = [lat, lng];
-                    adminMarker.setLatLng(latlng);
-                    adminMap.setView(latlng, 15);
-                }
-            }
-        });
-    }
-
-    const editMapDiv = document.getElementById('adminEditMap');
-    if (editMapDiv && !adminEditMap) {
-        const defaultCoords = [19.432608, -99.133208];
-        adminEditMap = L.map('adminEditMap').setView(defaultCoords, 13);
-        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 19,
-            attribution: '© Google Maps'
-        }).addTo(adminEditMap);
-        
-        adminEditMarker = L.marker(defaultCoords, { draggable: true }).addTo(adminEditMap);
-        
-        adminEditMarker.on('dragend', function() {
-            const pos = adminEditMarker.getLatLng();
-            document.getElementById('editEmpresaCoordenadas').value = `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
-        });
-        
-        adminEditMap.on('click', function(e) {
-            adminEditMarker.setLatLng(e.latlng);
-            document.getElementById('editEmpresaCoordenadas').value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-        });
-        
-        document.getElementById('editEmpresaCoordenadas').addEventListener('input', function() {
-            const val = this.value.split(',');
-            if (val.length === 2) {
-                const lat = parseFloat(val[0].trim());
-                const lng = parseFloat(val[1].trim());
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const latlng = [lat, lng];
-                    adminEditMarker.setLatLng(latlng);
-                    adminEditMap.setView(latlng, 15);
-                }
-            }
-        });
-    }
-}
-
-function initConsMap() {
-    const mapDiv = document.getElementById('consMap');
-    if (mapDiv && !consMap) {
-        const defaultCoords = [19.432608, -99.133208];
-        consMap = L.map('consMap').setView(defaultCoords, 13);
-        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 19,
-            attribution: '© Google Maps'
-        }).addTo(consMap);
-        
-        consMarker = L.marker(defaultCoords, { draggable: true }).addTo(consMap);
-        
-        consMarker.on('dragend', function() {
-            const pos = consMarker.getLatLng();
-            document.getElementById('consCoordenadas').value = `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
-        });
-        
-        consMap.on('click', function(e) {
-            consMarker.setLatLng(e.latlng);
-            document.getElementById('consCoordenadas').value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-        });
-        
-        document.getElementById('consCoordenadas').addEventListener('input', function() {
-            const val = this.value.split(',');
-            if (val.length === 2) {
-                const lat = parseFloat(val[0].trim());
-                const lng = parseFloat(val[1].trim());
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const latlng = [lat, lng];
-                    consMarker.setLatLng(latlng);
-                    consMap.setView(latlng, 15);
-                }
-            }
-        });
-    }
-}
-
-function updateEditMapPosition(coordsStr) {
-    let lat = 19.432608;
-    let lng = -99.133208;
-    if (coordsStr) {
-        const parts = coordsStr.split(',');
-        if (parts.length === 2) {
-            const pLat = parseFloat(parts[0].trim());
-            const pLng = parseFloat(parts[1].trim());
-            if (!isNaN(pLat) && !isNaN(pLng)) {
-                lat = pLat;
-                lng = pLng;
-            }
-        }
-    }
-    
-    if (!adminEditMap) {
-        initAdminMaps();
-    }
-    
-    setTimeout(() => {
-        adminEditMap.invalidateSize();
-        const latlng = [lat, lng];
-        adminEditMarker.setLatLng(latlng);
-        adminEditMap.setView(latlng, 15);
-    }, 200);
-}
+function initAdminMaps() {}
+function updateEditMapPosition(coordsStr) {}
 
 // Inicializar listeners al cargar
 document.addEventListener("DOMContentLoaded", () => {
     // Aplicar restricciones
     aplicarRestriccionesPorRol();
-
-    // Inicializar mapas
-    initAdminMaps();
-    
-    // Invalidar tamaño después del render para que Leaflet se dibuje bien
-    setTimeout(() => {
-        if (adminMap) adminMap.invalidateSize();
-    }, 500);
 });
+
+
 
 function toggleMobileMenu() {
     const sidebar = document.querySelector('.sidebar');

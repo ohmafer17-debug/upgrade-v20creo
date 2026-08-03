@@ -2,6 +2,7 @@
 // =================================================================
 // BACKEND GLOBAL DE UPS: ups_procesar.php 
 // =================================================================
+session_start();
 
 ini_set('display_errors', 0);
 error_reporting(0);
@@ -18,6 +19,11 @@ $datos = json_decode($inputRaw, true);
 $accion = isset($_POST['accion']) ? $_POST['accion'] : (isset($datos['accion']) ? $datos['accion'] : '');
 
 $usuario_ejecutor_email = isset($_POST['usuario_ejecutor_email']) ? trim($_POST['usuario_ejecutor_email']) : (isset($datos['usuario_ejecutor_email']) ? trim($datos['usuario_ejecutor_email']) : '');
+
+// 🚀 RESPALDO DE SEGURIDAD: Si no viene en el request, usar el correo guardado en la sesión de PHP del servidor
+if (empty($usuario_ejecutor_email) && isset($_SESSION['usuario_email'])) {
+    $usuario_ejecutor_email = $_SESSION['usuario_email'];
+}
 
 $rol_ejecutor = 'Invitado'; // Por defecto
 if (!empty($usuario_ejecutor_email)) {
@@ -57,138 +63,267 @@ if (in_array($accion, $acciones_staff_mutar)) {
 // -----------------------------------------------------------------
 
 if ($accion === 'registrar_nueva_empresa') {
-    $empresa_nombre     = isset($_POST['empresa_nombre']) ? trim($_POST['empresa_nombre']) : (isset($datos['empresa_nombre']) ? trim($datos['empresa_nombre']) : '');
-    $empresa_cod        = isset($_POST['empresa_cod']) ? trim($_POST['empresa_cod']) : (isset($datos['empresa_cod']) ? trim($datos['empresa_cod']) : ''); 
-    $email_usuario      = isset($_POST['email_usuario']) ? trim($_POST['email_usuario']) : (isset($datos['email_usuario']) ? trim($datos['email_usuario']) : '');
-    $pass_usuario       = isset($_POST['pass_usuario']) ? trim($_POST['pass_usuario']) : (isset($datos['pass_usuario']) ? trim($datos['pass_usuario']) : '');
-    $rol_inicial        = isset($_POST['rol_inicial']) ? trim($_POST['rol_inicial']) : (isset($datos['rol_inicial']) ? trim($datos['rol_inicial']) : '');
-    $rn_vinculado       = isset($_POST['rn_vinculado']) ? trim($_POST['rn_vinculado']) : (isset($datos['rn_vinculado']) ? trim($datos['rn_vinculado']) : '');
+    try {
+        $empresa_nombre     = isset($_POST['empresa_nombre']) ? trim($_POST['empresa_nombre']) : (isset($datos['empresa_nombre']) ? trim($datos['empresa_nombre']) : '');
+        $empresa_cod        = isset($_POST['empresa_cod']) ? trim($_POST['empresa_cod']) : (isset($datos['empresa_cod']) ? trim($datos['empresa_cod']) : ''); 
+        $email_usuario      = isset($_POST['email_usuario']) ? trim($_POST['email_usuario']) : (isset($datos['email_usuario']) ? trim($datos['email_usuario']) : '');
+        $pass_usuario       = isset($_POST['pass_usuario']) ? trim($_POST['pass_usuario']) : (isset($datos['pass_usuario']) ? trim($datos['pass_usuario']) : '');
+        $rol_inicial        = isset($_POST['rol_inicial']) ? trim($_POST['rol_inicial']) : (isset($datos['rol_inicial']) ? trim($datos['rol_inicial']) : '');
+        $rn_vinculado       = isset($_POST['rn_vinculado']) ? trim($_POST['rn_vinculado']) : (isset($datos['rn_vinculado']) ? trim($datos['rn_vinculado']) : '');
 
-    $email_adicional    = isset($_POST['email_adicional']) ? trim($_POST['email_adicional']) : (isset($datos['email_adicional']) ? trim($datos['email_adicional']) : '');
-    $telefono_principal = isset($_POST['telefono_principal']) ? trim($_POST['telefono_principal']) : (isset($datos['telefono_principal']) ? trim($datos['telefono_principal']) : '');
-    $telefono_adicional = isset($_POST['telefono_adicional']) ? trim($_POST['telefono_adicional']) : (isset($datos['telefono_adicional']) ? trim($datos['telefono_adicional']) : '');
-    $direccion          = isset($_POST['direccion']) ? trim($_POST['direccion']) : (isset($datos['direccion']) ? trim($datos['direccion']) : '');
-    $coordenadas        = isset($_POST['coordenadas']) ? trim($_POST['coordenadas']) : (isset($datos['coordenadas']) ? trim($datos['coordenadas']) : '');
+        $email_adicional    = isset($_POST['email_adicional']) ? trim($_POST['email_adicional']) : (isset($datos['email_adicional']) ? trim($datos['email_adicional']) : '');
+        $telefono_principal = isset($_POST['telefono_principal']) ? trim($_POST['telefono_principal']) : (isset($datos['telefono_principal']) ? trim($datos['telefono_principal']) : '');
+        $telefono_adicional = isset($_POST['telefono_adicional']) ? trim($_POST['telefono_adicional']) : (isset($datos['telefono_adicional']) ? trim($datos['telefono_adicional']) : '');
+        $direccion          = isset($_POST['direccion']) ? trim($_POST['direccion']) : (isset($datos['direccion']) ? trim($datos['direccion']) : '');
+        $coordenadas        = isset($_POST['coordenadas']) ? trim($_POST['coordenadas']) : (isset($datos['coordenadas']) ? trim($datos['coordenadas']) : '');
 
-    if (empty($empresa_nombre) || empty($email_usuario) || empty($pass_usuario)) {
-        echo json_encode(["status" => "error", "message" => "Existen campos mandatorios incompletos."]);
-        exit;
-    }
+        if (empty($empresa_nombre) || empty($email_usuario) || empty($pass_usuario)) {
+            echo json_encode(["status" => "error", "message" => "Existen campos mandatorios incompletos."]);
+            exit;
+        }
 
-    // Validar contraseña
-    $pass_err = validarPasswordComplejidad($pass_usuario);
-    if ($pass_err) {
-        echo json_encode(["status" => "error", "message" => "Seguridad de Contraseña: " . $pass_err]);
-        exit;
-    }
+        // Validar contraseña
+        $pass_err = validarPasswordComplejidad($pass_usuario);
+        if ($pass_err) {
+            echo json_encode(["status" => "error", "message" => "Seguridad de Contraseña: " . $pass_err]);
+            exit;
+        }
 
-    // 🚀 LÓGICA DE AUTOGENERACIÓN DE ID SECUENCIAL DE COLABORADOR SI ES VINCULADO
-    if (!empty($rn_vinculado) && $rn_vinculado !== 'NINGUNO') {
-        $stmtRN = $conexion->prepare("SELECT cod FROM empresas_clientes WHERE email = ? LIMIT 1");
-        $stmtRN->bind_param("s", $rn_vinculado);
-        $stmtRN->execute();
-        $resRN = $stmtRN->get_result();
-        if ($resRN && $resRN->num_rows > 0) {
-            $rowRN = $resRN->fetch_assoc();
-            $cod_superior = $rowRN['cod'];
-            
-            $base_empresa = explode('/', $cod_superior)[0];
-            
-            $rol_limpio = strtolower($rol_inicial);
-            $abreviatura = 'RN';
-            if ($rol_limpio === 'tipo 1') {
-                $abreviatura = 'T1';
-            } elseif ($rol_limpio === 'tipo 2') {
-                $abreviatura = 'T2';
-            } elseif ($rol_limpio === 'tipo 3') {
-                $abreviatura = 'T3';
-            } elseif ($rol_limpio === 'consultor') {
-                $abreviatura = 'Consultor';
-            }
-            
-            $prefijo_busqueda = $conexion->real_escape_string($base_empresa . "/" . $abreviatura);
-            $query_ultimo = "SELECT cod FROM empresas_clientes WHERE cod LIKE '$prefijo_busqueda%' ORDER BY cod DESC LIMIT 1";
-            $res_ultimo = $conexion->query($query_ultimo);
-            
-            $siguiente_letra = 'A';
-            if ($res_ultimo && $res_ultimo->num_rows > 0) {
-                $row_ultimo = $res_ultimo->fetch_assoc();
-                $ultimo_cod = $row_ultimo['cod'];
+        // 🚀 LÓGICA DE AUTOGENERACIÓN DE ID SECUENCIAL DE COLABORADOR SI ES VINCULADO
+        if (!empty($rn_vinculado) && $rn_vinculado !== 'NINGUNO') {
+            $rol_inicial = 'Tipo 1'; // Cambiar al rango inferior de forma automática al vincular un RN
+            $stmtRN = $conexion->prepare("SELECT cod FROM empresas_clientes WHERE email = ? LIMIT 1");
+            $stmtRN->bind_param("s", $rn_vinculado);
+            $stmtRN->execute();
+            $resRN = $stmtRN->get_result();
+            if ($resRN && $resRN->num_rows > 0) {
+                $rowRN = $resRN->fetch_assoc();
+                $cod_superior = $rowRN['cod'];
                 
-                $offset = strlen($base_empresa) + 1 + strlen($abreviatura);
-                $sufijo_letra = substr($ultimo_cod, $offset);
-                if (!empty($sufijo_letra)) {
-                    $siguiente_letra = ++$sufijo_letra;
+                $base_empresa = explode('/', $cod_superior)[0];
+                
+                $rol_limpio = strtolower($rol_inicial);
+                $abreviatura = 'RN';
+                if ($rol_limpio === 'tipo 1') {
+                    $abreviatura = 'T1';
+                } elseif ($rol_limpio === 'tipo 2') {
+                    $abreviatura = 'T2';
+                } elseif ($rol_limpio === 'tipo 3') {
+                    $abreviatura = 'T3';
+                } elseif ($rol_limpio === 'consultor') {
+                    $abreviatura = 'Consultor';
                 }
-            }
-            $empresa_cod = $base_empresa . "/" . $abreviatura . $siguiente_letra;
-        } else {
-            echo json_encode(["status" => "error", "message" => "El superior vinculado no se encuentra registrado."]);
-            $stmtRN->close();
-            exit;
-        }
-        $stmtRN->close();
-        $empresa_nombre .= " (RN: " . $rn_vinculado . ")";
-    }
-
-    // Procesar logotipo si se sube
-    $logo_nombre_fisico = null;
-    if (isset($_FILES['logo']) && $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
-        if ($_FILES['logo']['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(["status" => "error", "message" => "Error PHP al subir logotipo (Código: " . $_FILES['logo']['error'] . "). Valida el peso de la imagen y los límites de php.ini."]);
-            exit;
-        }
-        
-        $fileTmpPath = $_FILES['logo']['tmp_name'];
-        $fileName    = $_FILES['logo']['name'];
-        $fileSize    = $_FILES['logo']['size'];
-        
-        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        $allowed_exts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
-        
-        if (in_array($ext, $allowed_exts)) {
-            if ($fileSize <= 5242880) { // 5MB max
-                $logo_dir = __DIR__ . "/../public/uploads/logos/";
-                if (!is_dir($logo_dir)) {
-                    if (!mkdir($logo_dir, 0777, true)) {
-                        echo json_encode(["status" => "error", "message" => "No se pudo crear la carpeta de destino del logotipo."]);
-                        exit;
+                
+                $prefijo_busqueda = $conexion->real_escape_string($base_empresa . "/" . $abreviatura);
+                $query_ultimo = "SELECT cod FROM empresas_clientes WHERE cod LIKE '$prefijo_busqueda%' ORDER BY cod DESC LIMIT 1";
+                $res_ultimo = $conexion->query($query_ultimo);
+                
+                $siguiente_letra = 'A';
+                if ($res_ultimo && $res_ultimo->num_rows > 0) {
+                    $row_ultimo = $res_ultimo->fetch_assoc();
+                    $ultimo_cod = $row_ultimo['cod'];
+                    
+                    $offset = strlen($base_empresa) + 1 + strlen($abreviatura);
+                    $sufijo_letra = substr($ultimo_cod, $offset);
+                    if (!empty($sufijo_letra)) {
+                        $siguiente_letra = ++$sufijo_letra;
                     }
                 }
-                $logo_nombre_fisico = md5(time() . $fileName) . "." . $ext;
-                if (!move_uploaded_file($fileTmpPath, $logo_dir . $logo_nombre_fisico)) {
-                    echo json_encode(["status" => "error", "message" => "Error al guardar físicamente la imagen del logotipo en el servidor."]);
+                $empresa_cod = $base_empresa . "/" . $abreviatura . $siguiente_letra;
+            } else {
+                echo json_encode(["status" => "error", "message" => "El superior vinculado no se encuentra registrado."]);
+                $stmtRN->close();
+                exit;
+            }
+            $stmtRN->close();
+            $empresa_nombre .= " (RN: " . $rn_vinculado . ")";
+        } else {
+            // Generar código autogenerado independiente si viene vacío
+            if (empty($empresa_cod)) {
+                $orgNombre = $empresa_nombre;
+                $orgNombre = str_replace(
+                    ['á','é','í','ó','ú','ñ','Á','É','Í','Ó','Ú','Ñ'],
+                    ['a','e','i','o','u','n','A','E','I','O','U','N'],
+                    $orgNombre
+                );
+                $codGenerado = preg_replace('/[^A-Z0-9]/', '', strtoupper($orgNombre));
+                if (strlen($codGenerado) < 3) {
+                    $codGenerado = substr($codGenerado . "XYZ", 0, 4);
+                } else {
+                    $codGenerado = substr($codGenerado, 0, 4);
+                }
+                $numAleatorio = rand(100, 999);
+                $empresa_cod = $codGenerado . "-" . $numAleatorio;
+            }
+            $rn_vinculado = ''; // Asegurar que quede vacío en la BD
+        }
+
+        // Procesar logotipo si se sube
+        $logo_nombre_fisico = null;
+        if (isset($_FILES['logo']) && $_FILES['logo']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['logo']['error'] !== UPLOAD_ERR_OK) {
+                echo json_encode(["status" => "error", "message" => "Error PHP al subir logotipo (Código: " . $_FILES['logo']['error'] . "). Valida el peso de la imagen y los límites de php.ini."]);
+                exit;
+            }
+            
+            $fileTmpPath = $_FILES['logo']['tmp_name'];
+            $fileName    = $_FILES['logo']['name'];
+            $fileSize    = $_FILES['logo']['size'];
+            
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            $allowed_exts = ['png', 'jpg', 'jpeg', 'gif', 'webp'];
+            
+            if (in_array($ext, $allowed_exts)) {
+                if ($fileSize <= 5242880) { // 5MB max
+                    $logo_dir = __DIR__ . "/../public/uploads/logos/";
+                    if (!is_dir($logo_dir)) {
+                        if (!mkdir($logo_dir, 0777, true)) {
+                            echo json_encode(["status" => "error", "message" => "No se pudo crear la carpeta de destino del logotipo."]);
+                            exit;
+                        }
+                    }
+                    $logo_nombre_fisico = md5(time() . $fileName) . "." . $ext;
+                    if (!move_uploaded_file($fileTmpPath, $logo_dir . $logo_nombre_fisico)) {
+                        echo json_encode(["status" => "error", "message" => "Error al guardar físicamente la imagen del logotipo en el servidor."]);
+                        exit;
+                    }
+                } else {
+                    echo json_encode(["status" => "error", "message" => "El logotipo supera el tamaño de 5MB permitido."]);
                     exit;
                 }
             } else {
-                echo json_encode(["status" => "error", "message" => "El logotipo supera el tamaño de 5MB permitido."]);
+                echo json_encode(["status" => "error", "message" => "Formato de logotipo no válido. Solo se admiten PNG, JPG, JPEG, GIF o WEBP."]);
                 exit;
             }
+        }
+
+        // Encriptar contraseña
+        $pass_encriptada = password_hash($pass_usuario, PASSWORD_BCRYPT);
+        $activo_inicial = 1;
+
+        $encargado          = isset($_POST['encargado']) ? trim($_POST['encargado']) : '';
+        $director_email     = isset($_POST['director_email']) ? trim($_POST['director_email']) : '';
+        $creado_por_final = !empty($usuario_ejecutor_email) ? $usuario_ejecutor_email : 'Sistema';
+        // Insertar incluyendo encargado, director_email y metadatos de auditoría
+        $stmt = $conexion->prepare("INSERT INTO empresas_clientes (cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, pass, activo, rol, logo, creado_por, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->bind_param("sssssssssssisss", $empresa_cod, $empresa_nombre, $encargado, $director_email, $email_usuario, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $pass_encriptada, $activo_inicial, $rol_inicial, $logo_nombre_fisico, $creado_por_final);
+        
+        if ($stmt->execute()) {
+            echo json_encode(["status" => "success", "message" => "La consultora ha sido creada exitosamente."]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Formato de logotipo no válido. Solo se admiten PNG, JPG, JPEG, GIF o WEBP."]);
-            exit;
+            echo json_encode(["status" => "error", "message" => "Error interno en los parámetros: " . $stmt->error]);
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        echo json_encode(["status" => "error", "message" => "Falla en base de datos: " . $e->getMessage()]);
+    }
+    exit;
+}
+
+// -----------------------------------------------------------------
+// NUEVA ACCIÓN: AUTOGENERAR ID DE SUCURSAL (A, B, ..., Z, AA, AB...)
+// -----------------------------------------------------------------
+if ($accion === 'generar_siguiente_id_sucursal') {
+    $cod_raiz = isset($_POST['cod_raiz']) ? trim($_POST['cod_raiz']) : (isset($datos['cod_raiz']) ? trim($datos['cod_raiz']) : '');
+    if (empty($cod_raiz)) {
+        echo json_encode(['status' => 'error', 'message' => 'Código raíz requerido.']);
+        exit;
+    }
+    $cod_raiz_esc = $conexion->real_escape_string($cod_raiz);
+    // Obtener todas las sucursales directas bajo esta raíz
+    $res = $conexion->query("SELECT cod FROM empresas_clientes WHERE cod LIKE '$cod_raiz_esc/%'");
+    $sufijos_usados = [];
+    while ($row = $res->fetch_assoc()) {
+        $sufijo = substr($row['cod'], strlen($cod_raiz) + 1);
+        // Solo sucursales directas (sin sub-slash)
+        if (strpos($sufijo, '/') === false && !empty($sufijo)) {
+            $sufijos_usados[] = strtoupper($sufijo);
         }
     }
-
-    // Encriptar contraseña
-    $pass_encriptada = password_hash($pass_usuario, PASSWORD_BCRYPT);
-    $activo_inicial = 1;
-
-    // Insertar incluyendo el logo
-    $stmt = $conexion->prepare("INSERT INTO empresas_clientes (cod, nombre, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, pass, activo, rol, logo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssssssssiss", $empresa_cod, $empresa_nombre, $email_usuario, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $pass_encriptada, $activo_inicial, $rol_inicial, $logo_nombre_fisico);
-    
-    if ($stmt->execute()) {
-        echo json_encode(["status" => "success", "message" => "La empresa corporativa ha sido registrada exitosamente con firma criptográfica."]);
-    } else {
-        echo json_encode(["status" => "error", "message" => "Error interno en los parámetros: " . $stmt->error]);
+    // Calcular siguiente letra: A, B, ..., Z, AA, AB, ... (PHP string increment)
+    $siguiente = 'A';
+    $intentos = 0;
+    while (in_array($siguiente, $sufijos_usados) && $intentos < 1000) {
+        $siguiente++;
+        $intentos++;
     }
-    $stmt->close();
+    $nuevo_id = $cod_raiz . '/' . $siguiente;
+    echo json_encode(['status' => 'success', 'siguiente_id' => $nuevo_id, 'sufijo' => $siguiente]);
+    exit;
+}
+
+if ($accion === 'obtener_asignaciones_consultor') {
+    $usuario_cod = isset($_POST['usuario_cod']) ? $conexion->real_escape_string(trim($_POST['usuario_cod'])) : (isset($datos['usuario_cod']) ? $conexion->real_escape_string(trim($datos['usuario_cod'])) : '');
+    
+    if (empty($usuario_cod)) {
+        echo json_encode(["status" => "error", "message" => "Falta código de consultor."]);
+        exit;
+    }
+    
+    $conexion->query("CREATE TABLE IF NOT EXISTS asignaciones_supervision (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_cod VARCHAR(50) NOT NULL,
+        empresa_cod VARCHAR(50) NOT NULL,
+        fecha_asignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    $res = $conexion->query("SELECT empresa_cod FROM asignaciones_supervision WHERE usuario_cod = '$usuario_cod'");
+    $emp_cods = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $emp_cods[] = $row['empresa_cod'];
+        }
+    }
+    echo json_encode(["status" => "success", "data" => $emp_cods]);
+    exit;
+}
+
+if ($accion === 'guardar_asignaciones_consultor') {
+    $usuario_cod = isset($_POST['usuario_cod']) ? $conexion->real_escape_string(trim($_POST['usuario_cod'])) : (isset($datos['usuario_cod']) ? $conexion->real_escape_string(trim($datos['usuario_cod'])) : '');
+    $empresa_cods = isset($_POST['empresa_cods']) ? $_POST['empresa_cods'] : (isset($datos['empresa_cods']) ? $datos['empresa_cods'] : []);
+
+    if (empty($usuario_cod)) {
+        echo json_encode(["status" => "error", "message" => "Falta código de consultor."]);
+        exit;
+    }
+
+    $conexion->query("CREATE TABLE IF NOT EXISTS asignaciones_supervision (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        usuario_cod VARCHAR(50) NOT NULL,
+        empresa_cod VARCHAR(50) NOT NULL,
+        fecha_asignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    $conexion->query("DELETE FROM asignaciones_supervision WHERE usuario_cod = '$usuario_cod'");
+    
+    if (is_array($empresa_cods)) {
+        foreach ($empresa_cods as $emp_cod) {
+            $emp_cod_esc = $conexion->real_escape_string(trim($emp_cod));
+            if (!empty($emp_cod_esc)) {
+                $conexion->query("INSERT INTO asignaciones_supervision (usuario_cod, empresa_cod) VALUES ('$usuario_cod', '$emp_cod_esc')");
+            }
+        }
+    }
+    
+    echo json_encode(["status" => "success", "message" => "Asignaciones guardadas exitosamente."]);
+    exit;
+}
+
+if ($accion === 'obtener_todos_los_consultores') {
+    $query = "SELECT cod, nombre FROM empresas_clientes WHERE LOWER(rol) = 'consultor' ORDER BY nombre ASC";
+    $res = $conexion->query($query);
+    $consultores = [];
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $consultores[] = $row;
+        }
+    }
+    echo json_encode(["status" => "success", "data" => $consultores]);
     exit;
 }
 
 if ($accion === 'obtener_solo_empresas_raiz') {
-    $query = "SELECT cod, nombre FROM empresas_clientes WHERE LOWER(rol) = 'consultor' OR LOWER(rol) = 'cliente' ORDER BY nombre ASC";
+    $query = "SELECT cod, nombre FROM empresas_clientes WHERE cod NOT LIKE '%/%' ORDER BY nombre ASC";
     $res = $conexion->query($query);
     $empresas = [];
     if ($res) { while ($row = $res->fetch_assoc()) { $empresas[] = $row; } }
@@ -209,12 +344,12 @@ if ($accion === 'listar_licencias_globales') {
     END ASC";
 
     if ($filtro === 'TODAS') {
-        $query = "SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo FROM empresas_clientes ORDER BY $ordenJerarquico, id DESC";
+        $query = "SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE (cod NOT LIKE '%/%' OR creado_por = 'Sistema' OR creado_por IN (SELECT email FROM admin_ups)) ORDER BY $ordenJerarquico, id DESC";
         $res = $conexion->query($query);
     } else {
         // Sentencia preparada para el filtrado dinámico por sucursal
         $filtro_like = $filtro . "/%";
-        $stmt = $conexion->prepare("SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo FROM empresas_clientes WHERE cod = ? OR cod LIKE ? ORDER BY $ordenJerarquico, id DESC");
+        $stmt = $conexion->prepare("SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE (cod = ? OR cod LIKE ?) AND (cod NOT LIKE '%/%' OR creado_por = 'Sistema' OR creado_por IN (SELECT email FROM admin_ups)) ORDER BY $ordenJerarquico, id DESC");
         $stmt->bind_param("ss", $filtro, $filtro_like);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -237,7 +372,9 @@ if ($accion === 'listar_licencias_globales') {
                 "coordenadas" => $row['coordenadas'],
                 "rol" => $row['rol'], 
                 "activo" => $row['activo'],
-                "logo" => $row['logo']
+                "logo" => $row['logo'],
+                "fecha_creacion" => $row['fecha_creacion'],
+                "creado_por" => $row['creado_por']
             ];
         }
     }

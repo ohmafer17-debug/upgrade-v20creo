@@ -55,6 +55,13 @@ body {
     filter: drop-shadow(0 0 5px rgba(140, 107, 46, 0.4));
 }
 
+.menu-nav-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    width: 100%;
+}
+
 .menu-wrapper { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 
 .menu-items { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -297,13 +304,41 @@ td { padding: 16px; border-bottom: 1px solid #fdfcfb; font-size: 0.95rem; color:
     .filter-box select { max-width: 100%; width: 100%; }
 }
 
+.mobile-menu-toggle {
+    display: none;
+}
+
 @media (max-width: 768px) {
     body { flex-direction: column; overflow-y: auto; height: auto; }
-    .sidebar { width: 100%; height: auto; padding: 15px 20px; }
-    .sidebar .brand { margin-bottom: 15px; justify-content: center; }
-    .menu-items { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 5px; }
-    .menu-items li a { padding: 8px 12px; font-size: 0.85rem; gap: 8px; }
-    .btn-logout { margin-top: 10px !important; width: 100%; justify-content: center; }
+    .sidebar { width: 100%; height: auto; padding: 15px 20px; position: relative; box-sizing: border-box; }
+    .sidebar .brand { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0; }
+    .mobile-menu-toggle { display: block !important; font-size: 1.5rem; color: #cbd5e1; cursor: pointer; transition: 0.2s; }
+    .mobile-menu-toggle:hover { color: white; }
+    
+    .menu-nav-container {
+        display: none;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        width: 250px;
+        background: var(--ups-dark);
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .sidebar.mobile-expanded .menu-nav-container {
+        display: flex;
+    }
+    
+    .menu-items { display: flex !important; flex-direction: column; width: 100%; gap: 6px; }
+    .menu-items li a { padding: 12px 16px; font-size: 0.95rem; gap: 12px; }
+    
+    .btn-logout { margin-top: 0 !important; width: 100%; justify-content: center; }
     .main-content { padding: 20px 15px; overflow-y: visible; }
     .header-dashboard { text-align: center; }
     .form-grid { grid-template-columns: 1fr; gap: 15px; }

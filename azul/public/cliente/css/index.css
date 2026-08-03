@@ -18,15 +18,15 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-main); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; -webkit-font-smoothing: antialiased; }
 
-.sidebar { width: 270px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 40px 24px; flex-shrink: 0; border-right: 1px solid rgba(255, 255, 255, 0.02); }
-.sidebar .brand { font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; margin-bottom: 45px; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; color: #ffffff; }
+.sidebar { width: 260px; background: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 24px 20px; flex-shrink: 0; border-right: 1px solid rgba(255, 255, 255, 0.02); overflow-y: auto; max-height: 100vh; }
+.sidebar .brand { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; letter-spacing: -0.5px; color: #ffffff; }
 .sidebar .brand i { color: var(--accent-green); filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4)); }
 
 .menu-items { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-.menu-items li a { color: #94a3b8; text-decoration: none; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 12px; font-size: 0.95rem; font-weight: 500; transition: all 0.2s ease; cursor: pointer; }
+.menu-items li a { color: #94a3b8; text-decoration: none; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; font-size: 0.92rem; font-weight: 500; transition: all 0.2s ease; cursor: pointer; }
 .menu-items li:hover a, .menu-items li.active a { background: var(--sidebar-hover); color: #f8fafc; }
 .menu-items li.active a { background: var(--sidebar-active); color: #ffffff; font-weight: 600; box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.3); }
-.btn-logout { background: rgba(244, 63, 94, 0.05); color: #fda4af !important; margin-top: auto; border: 1px solid rgba(244, 63, 94, 0.1); }
+.btn-logout { background: rgba(244, 63, 94, 0.05); color: #fda4af !important; margin-top: auto; border: 1px solid rgba(244, 63, 94, 0.1); padding: 10px 14px; }
 .btn-logout:hover { background: var(--accent-red) !important; color: white !important; box-shadow: 0 10px 15px -3px rgba(244, 63, 94, 0.3); }
 
 .main-content { flex: 1; padding: 50px 60px; overflow-y: auto; }
@@ -109,13 +109,32 @@ tr:hover td { background: #fafafa; }
     .mobile-menu-toggle { display: block !important; font-size: 1.5rem; color: #cbd5e1; cursor: pointer; transition: 0.2s; }
     .mobile-menu-toggle:hover { color: white; }
     
-    .menu-items { display: none !important; flex-direction: column; width: 100%; margin-top: 15px; gap: 8px; }
+    .menu-nav-container {
+        display: none;
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        width: 250px;
+        background: var(--sidebar-bg);
+        border: 1px solid #1e293b;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .sidebar.mobile-expanded .menu-nav-container {
+        display: flex;
+    }
+    
+    .menu-items { display: flex !important; flex-direction: column; width: 100%; gap: 6px; }
     .menu-items li a { padding: 12px 16px; font-size: 0.95rem; gap: 12px; }
     
-    .sidebar.mobile-expanded .menu-items { display: flex !important; }
-    .sidebar.mobile-expanded .brand { border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 12px; }
+    .sidebar.mobile-expanded .brand { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
     
-    .btn-logout { margin-top: 10px !important; width: 100%; justify-content: center; }
+    .btn-logout { margin-top: 0 !important; width: 100%; justify-content: center; }
     .main-content { padding: 20px 15px; overflow-y: visible; }
     .header-panel { flex-direction: column; align-items: flex-start; gap: 12px; }
     .header-panel h1 { font-size: 1.8rem; }

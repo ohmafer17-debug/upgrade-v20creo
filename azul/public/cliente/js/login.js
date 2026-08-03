@@ -45,6 +45,9 @@ document.getElementById('formLoginGlobal').addEventListener('submit', async func
             localStorage.setItem('cliente_sesion_id', res.id_cliente);
             localStorage.setItem('cliente_sesion_nombre', res.nombre_usuario);
             localStorage.setItem('cliente_sesion_rol', res.rol_usuario);
+            localStorage.setItem('cliente_sesion_email', res.data.email || '');
+            localStorage.setItem('cliente_sesion_encargado', res.data.encargado || '');
+            localStorage.setItem('cliente_sesion_logo', res.data.logo || '');
 
             alert(res.message);
             
@@ -93,6 +96,12 @@ function verificarBloqueoActive() {
     const bloqueoHasta = localStorage.getItem('login_bloqueado_hasta');
 
     if (bloqueoHasta && Date.now() < bloqueoHasta) {
+        // Control de robustez extra: si el bloqueo es mayor a 60 segundos (o corrupto), limpiarlo por seguridad
+        if (bloqueoHasta - Date.now() > 60000) {
+            localStorage.removeItem('login_bloqueado_hasta');
+            sessionStorage.removeItem('login_intentos_fallidos');
+            return false;
+        }
         btn.disabled = true;
         
         const intervalo = setInterval(() => {
