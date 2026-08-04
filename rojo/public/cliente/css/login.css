@@ -2,14 +2,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-    --bg-env: #090d16;
-    --card-bg: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --accent-blue: #2563eb;
-    --input-bg: #f8fafc;
-    --border-color: #e2e8f0;
-    --accent-red: #f43f5e;
+    --bg-env: #050f1d;
+    --card-bg: #0b1524;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --accent-blue: #c29b53;
+    --input-bg: #0f1c30;
+    --border-color: #1e293b;
+    --accent-red: #ef4444;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -119,14 +119,14 @@ input {
 
 input:focus { 
     border-color: var(--accent-blue); 
-    background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+    background: var(--input-bg);
+    box-shadow: 0 0 0 4px rgba(194, 155, 83, 0.15);
 }
 
 /* --- BOTÓN PREMIUM --- */
 button { 
     font-family: 'Plus Jakarta Sans', sans-serif;
-    background: var(--text-main); 
+    background: linear-gradient(135deg, #c29b53 0%, #a8803a 100%); 
     color: white; 
     border: none; 
     padding: 14px; 
@@ -139,8 +139,8 @@ button {
 }
 
 button:hover { 
-    background: #1e293b;
-    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+    background: linear-gradient(135deg, #d4ae66 0%, #b89045 100%);
+    box-shadow: 0 10px 15px -3px rgba(194, 155, 83, 0.25);
 }
 
 button:disabled { 
@@ -153,9 +153,9 @@ button:disabled {
 .alert-danger { 
     display: none; 
     padding: 14px; 
-    background: #fee2e2; 
-    border: 1px solid #fca5a5; 
-    color: #991b1b; 
+    background: #2d1a1a; 
+    border: 1px solid #ef4444; 
+    color: #fca5a5; 
     border-radius: 12px; 
     font-size: 0.85rem; 
     font-weight: 500; 
@@ -176,13 +176,13 @@ button:disabled {
     justify-content: center;
 }
 .modal-content {
-    background: white;
+    background: var(--card-bg);
     padding: 35px;
     border-radius: 24px;
     width: 90%;
     max-width: 450px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    border: 1px solid #e2e8f0;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
     position: relative;
     animation: modalSlideUp 0.3s ease;
 }
