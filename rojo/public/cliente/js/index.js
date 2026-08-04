@@ -71,10 +71,6 @@ function agregarInputEmail(valor = '') {
     if (!container) return;
     
     const count = container.querySelectorAll('.email-group-wrapper').length;
-    if (count >= 5) {
-        alert("Límite alcanzado: Máximo 5 correos de alerta extras.");
-        return;
-    }
     
     const wrapper = document.createElement('div');
     wrapper.className = 'email-group-wrapper';
