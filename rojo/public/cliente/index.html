@@ -134,21 +134,20 @@
                                 <label id="lblFechaVencimiento">Fecha de Vencimiento (Opcional)</label>
                                 <input type="date" id="docVencimiento">
                             </div>
-
-                             <div class="form-group full" style="margin-top: 15px;">
-                                 <label style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                     <span>Correos de Alerta Extras (Opcional, Límite 5)</span>
-                                     <button type="button" id="btnAddEmailAlerta" class="btn-action edit" style="display: inline-flex; align-items: center; padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; width: auto; min-width: auto; margin: 0;"><i class="fas fa-plus"></i> Agregar Correo Extra</button>
-                                 </label>
-                                 <div id="containerEmailsAlerta" style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px; width: 100%;">
-                                     <!-- Inputs dinámicos para correos extras aparecerán aquí -->
-                                 </div>
-                                 <input type="hidden" id="docCorreosAlerta">
-                             </div>
-                             <div class="form-group full">
-                                 <label>Archivo(s) Nuevo(s) (PDF o Imagen, hasta 100MB c/u, opcional)</label>
-                                 <input type="file" id="docFile" accept="application/pdf, image/*" multiple>
-                             </div>
+                            <div class="form-group full" style="margin-top: 15px;">
+                                <label style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                    <span>Correos de Alerta Extras (Opcional, Límite 5)</span>
+                                    <button type="button" id="btnAddEmailAlerta" class="btn-action edit" style="display: inline-flex; align-items: center; padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; width: auto; min-width: auto; margin: 0;"><i class="fas fa-plus"></i> Agregar Correo Extra</button>
+                                </label>
+                                <div id="containerEmailsAlerta" style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px; width: 100%;">
+                                    <!-- Inputs dinámicos para correos extras aparecerán aquí -->
+                                </div>
+                                <input type="hidden" id="docCorreosAlerta">
+                            </div>
+                            <div class="form-group full">
+                                <label>Archivo Nuevo (PDF o Imagen, hasta 100MB c/u)</label>
+                                <input type="file" id="docFile" accept="application/pdf, image/*" multiple>
+                            </div>
                         </div>
                         <br><button type="submit" class="btn-submit" id="btnSubmitDoc"><i class="fas fa-file-import"></i> Guardar Archivo en Sistema</button>
                     </form>
@@ -156,7 +155,7 @@
             </div>
 
             <div class="table-container" id="containerSeccionTabla">
-                <h2><i class="fas fa-briefcase" style="color:var(--sidebar-active);"></i> Control Operativo y Acciones de Archivos</h2>
+                <h2><i class="fas fa-briefcase" style="color:var(--sidebar-active);"></i> Documentos</h2>
                 
                 <div class="filter-bar">
                     <label><i class="fas fa-filter" style="color: var(--sidebar-active);"></i> Filtrar por Categoría:</label>
