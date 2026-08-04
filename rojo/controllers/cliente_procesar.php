@@ -393,7 +393,7 @@ if ($accion === 'listar_mis_nodos') {
         $res = $conexion->query("SELECT cod, nombre FROM empresas_clientes WHERE cod = '$empresa_cod' ORDER BY cod ASC");
     } else {
         $base_empresa = explode('/', $empresa_cod)[0];
-        $res = $conexion->query("SELECT cod, nombre FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY cod ASC");
+        $res = $conexion->query("SELECT cod, nombre FROM empresas_clientes WHERE cod = '$base_empresa' OR (cod LIKE '$base_empresa/%' AND encargado IS NOT NULL AND encargado != '') ORDER BY cod ASC");
     }
     $nodos = [];
     if ($res) {
