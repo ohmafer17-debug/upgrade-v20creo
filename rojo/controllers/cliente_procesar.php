@@ -381,7 +381,7 @@ if ($accion === 'listar_mis_nodos') {
     $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
     $rol_ejecutor = isset($datos['rol_ejecutor']) ? strtolower(trim($datos['rol_ejecutor'])) : '';
 
-    if ($rol_ejecutor === 'tipo 2' || $rol_ejecutor === 'tipo 3') {
+    if ($rol_ejecutor === 'tipo 1' || $rol_ejecutor === 'tipo 2' || $rol_ejecutor === 'tipo 3') {
         $res = $conexion->query("SELECT cod, nombre FROM empresas_clientes WHERE cod = '$empresa_cod' ORDER BY cod ASC");
     } else {
         $base_empresa = explode('/', $empresa_cod)[0];
@@ -405,7 +405,7 @@ if ($accion === 'listar_documentos') {
     $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
     $empresa_especifica_cod = isset($datos['empresa_especifica_cod']) ? $conexion->real_escape_string(trim($datos['empresa_especifica_cod'])) : '';
 
-    if ($rol_ejecutor === 'tipo 2' || $rol_ejecutor === 'tipo 3') {
+    if ($rol_ejecutor === 'tipo 1' || $rol_ejecutor === 'tipo 2' || $rol_ejecutor === 'tipo 3') {
         $res = $conexion->query("SELECT id, empresa_cod, tipo_doc, nombre_personalizado, fecha_vencimiento, fecha_subida_sistema, subido_por, actualizado_por, visto_por, estatus, nombre_archivo_fisico, notificar_correos FROM documentos_pc WHERE empresa_cod = '$empresa_cod' ORDER BY id DESC");
     } else {
         if (!empty($empresa_especifica_cod)) {
@@ -540,7 +540,7 @@ if ($accion === 'listar_usuarios') {
     $empresa_cod = $conexion->real_escape_string(trim($datos['empresa_cod']));
     $rol_ejecutor = isset($datos['rol_ejecutor']) ? strtolower(trim($datos['rol_ejecutor'])) : '';
 
-    if ($rol_ejecutor === 'tipo 2' || $rol_ejecutor === 'tipo 3') {
+    if ($rol_ejecutor === 'tipo 1' || $rol_ejecutor === 'tipo 2' || $rol_ejecutor === 'tipo 3') {
         $res = $conexion->query("SELECT cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$empresa_cod' ORDER BY id DESC");
     } else {
         $base_empresa = explode('/', $empresa_cod)[0];

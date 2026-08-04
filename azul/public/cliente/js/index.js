@@ -254,7 +254,7 @@ async function cargarMisNodosSelect() {
                 selectExpediente.innerHTML += `<option value="${nodo.cod}" ${isSelected}>${nodo.nombre} (${nodo.cod})</option>`;
             });
             
-            if (rAct === 'tipo 2' || rAct === 'tipo 3') {
+            if (rAct === 'tipo 1' || rAct === 'tipo 2' || rAct === 'tipo 3') {
                 selectExpediente.disabled = true;
             } else {
                 selectExpediente.disabled = false;
