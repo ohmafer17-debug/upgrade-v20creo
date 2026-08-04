@@ -513,7 +513,7 @@ async function unificadoSubmitForm(e) {
     const checkedBoxes = document.querySelectorAll('#docEmpresaCheckboxes input[type="checkbox"]:checked');
     const isConsultor = (rolActualSesion.toLowerCase() === 'consultor' || rolActualSesion.toLowerCase() === 'responsable nacional' || rolActualSesion.toLowerCase() === 'responsable_nacional');
     if (isConsultor && checkedBoxes.length === 0) {
-        alert("Por favor, seleccione al menos una Empresa / Sucursal para asignar el documento.");
+        alert("Por favor, seleccione al menos una Empresa para asignar el documento.");
         return;
     }
     
