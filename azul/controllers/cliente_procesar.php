@@ -495,7 +495,7 @@ if ($accion === 'listar_documentos') {
                 $mensaje = "Estimado Equipo,\n\n";
                 $mensaje .= "Se notifica que el documento " . $row['tipo_doc'] . " (" . $row['nombre_limpio'] . ") ha entrado en la fase " . $mensaje_estatus . ".\n\n";
                 $mensaje .= "Requiere revisión inmediata en el sistema.\n\n";
-                $mensaje .= "Atentamente,\nXonexka";
+                $mensaje .= "Atentamente,\nUpgrade Systems";
 
                 $cabeceras = "From: no-reply@upgradesystems.com\r\nReply-To: no-reply@upgradesystems.com\r\nContent-Type: text/plain; charset=UTF-8\r\nX-Mailer: PHP/" . phpversion();
                 mail($para, $asunto, $mensaje, $cabeceras);

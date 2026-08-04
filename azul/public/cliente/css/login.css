@@ -1,0 +1,240 @@
+/* --- TIPOGRAFÍAS DE ALTA JERARQUÍA --- */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg-env: #090d16;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --accent-blue: #2563eb;
+    --input-bg: #f8fafc;
+    --border-color: #e2e8f0;
+    --accent-red: #f43f5e;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { 
+    font-family: 'Plus Jakarta Sans', sans-serif; 
+    background: #050f1d; 
+    height: 100vh; 
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+}
+
+.login-container-split {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+}
+
+.login-visual-side {
+    flex: 1;
+    background: linear-gradient(rgba(5, 15, 29, 0.2), rgba(5, 15, 29, 0.35)), url('../../uploads/login_banner.jpg?v=3');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+.login-form-side {
+    width: 480px;
+    background: #050f1d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    z-index: 2;
+}
+
+/* --- CONTENEDOR ELEGANTE --- */
+.login-card { 
+    background: var(--card-bg); 
+    padding: 45px 40px; 
+    border-radius: 24px; 
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4); 
+    width: 100%; 
+    max-width: 420px; 
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.brand-header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.brand-header .logo-icon {
+    font-size: 2rem;
+    color: var(--accent-blue);
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.3));
+}
+
+h2 { 
+    font-family: 'Outfit', sans-serif;
+    margin-top: 0; 
+    color: var(--text-main); 
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.brand-header p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* --- CAMPOS DE ENTRADA ESTILIZADOS --- */
+label { 
+    display: block; 
+    font-size: 0.8rem; 
+    font-weight: 600; 
+    margin-bottom: 8px; 
+    color: #475569; 
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.input-group {
+    margin-bottom: 24px;
+}
+
+input { 
+    width: 100%; 
+    padding: 14px 16px; 
+    border: 1px solid var(--border-color); 
+    border-radius: 12px; 
+    box-sizing: border-box; 
+    font-size: 0.95rem; 
+    outline: none; 
+    background: var(--input-bg);
+    color: var(--text-main);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.2s ease;
+}
+
+input:focus { 
+    border-color: var(--accent-blue); 
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+}
+
+/* --- BOTÓN PREMIUM --- */
+button { 
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--text-main); 
+    color: white; 
+    border: none; 
+    padding: 14px; 
+    width: 100%; 
+    border-radius: 12px; 
+    font-size: 0.95rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.2s ease; 
+}
+
+button:hover { 
+    background: #1e293b;
+    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+}
+
+button:disabled { 
+    background: var(--text-muted) !important; 
+    cursor: not-allowed; 
+    box-shadow: none !important;
+}
+
+/* --- ALERTAS NOTIFICATIVAS --- */
+.alert-danger { 
+    display: none; 
+    padding: 14px; 
+    background: #fee2e2; 
+    border: 1px solid #fca5a5; 
+    color: #991b1b; 
+    border-radius: 12px; 
+    font-size: 0.85rem; 
+    font-weight: 500; 
+    margin-bottom: 25px; 
+    text-align: center; 
+    line-height: 1.4;
+}
+
+/* --- ESTILOS DEL MODAL DE RECUPERACIÓN --- */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+.modal-content {
+    background: white;
+    padding: 35px;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    position: relative;
+    animation: modalSlideUp 0.3s ease;
+}
+@keyframes modalSlideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.modal-header h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 10px;
+}
+.modal-header p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+.modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: auto;
+    padding: 0;
+}
+.modal-close:hover {
+    color: var(--text-main);
+    box-shadow: none;
+}
+.recuperar-step {
+    display: none;
+}
+.recuperar-step.activo {
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .login-visual-side {
+        display: none;
+    }
+    .login-form-side {
+        width: 100%;
+        box-shadow: none;
+        padding: 20px;
+    }
+    .login-card {
+        margin: 20px;
+        max-width: 90%;
+    }
+}
