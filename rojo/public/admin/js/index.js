@@ -301,9 +301,10 @@ function renderizarLicencias(lista) {
             if (childIdx > -1) children.splice(childIdx, 1);
         });
     });
-    children.forEach(orphan => {
-        orderedList.push(orphan);
-    });
+    // No listar nodos huérfanos de forma independiente en la tabla general del administrador
+    // children.forEach(orphan => {
+    //     orderedList.push(orphan);
+    // });
 
     orderedList.forEach(emp => {
         const esActivo = parseInt(emp.activo) === 1;
