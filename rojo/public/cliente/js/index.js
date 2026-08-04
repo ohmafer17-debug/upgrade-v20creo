@@ -186,7 +186,7 @@ function aplicarRestrictionsMatriz() {
         if (menuColaboradores) menuColaboradores.style.display = 'block';
         
         if (tituloSeccion) tituloSeccion.innerHTML = `<i class="fas fa-building-circle-check" style="color:var(--sidebar-active);"></i> Registrar Nueva Empresa`;
-        if (lblUserNombre) lblUserNombre.innerText = "Nombre de la Empresa / Sucursal";
+        if (lblUserNombre) lblUserNombre.innerText = "Nombre de la Empresa";
         if (userNombreInput) userNombreInput.placeholder = "Ej: Porsche Santa Fe";
         
         initClienteMap();
@@ -200,7 +200,7 @@ function aplicarRestrictionsMatriz() {
         if (menuColaboradores) menuColaboradores.style.display = 'block';
         
         if (tituloSeccion) tituloSeccion.innerHTML = `<i class="fas fa-id-card-clip" style="color:var(--sidebar-active);"></i> Registrar Nuevo Nodo Operativo`;
-        if (lblUserNombre) lblUserNombre.innerText = "Nombre de la Empresa / Sucursal";
+        if (lblUserNombre) lblUserNombre.innerText = "Nombre de la Empresa";
         if (userNombreInput) userNombreInput.placeholder = "Ej: Carlos Pérez";
         
         // Ocultar columnas de acciones
