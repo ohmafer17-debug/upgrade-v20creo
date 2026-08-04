@@ -505,22 +505,19 @@ async function unificadoSubmitForm(e) {
     formData.append('accion', 'subir_documento'); formData.append('rol_ejecutor', rolActualSesion);
     formData.append('usuario_ejecutor', userName);
     
-    let targetEmpresas = [];
-    const checkedBoxes = document.querySelectorAll('#docEmpresaCheckboxes input[type="checkbox"]:checked');
-    const isConsultor = (rolActualSesion.toLowerCase() === 'consultor' || rolActualSesion.toLowerCase() === 'responsable nacional' || rolActualSesion.toLowerCase() === 'responsable_nacional');
-    if (isConsultor && checkedBoxes.length === 0) {
-        alert("Por favor, seleccione al menos una Empresa para asignar el documento.");
-        return;
+    let targetEmpresa = document.getElementById('docEmpresaCod').value.trim();
+    if (!targetEmpresa) {
+        const selectExp = document.getElementById('selectEmpresaExpediente');
+        if (selectExp) {
+            targetEmpresa = selectExp.value.trim();
+        }
     }
     
-    if (checkedBoxes.length > 0) {
-        checkedBoxes.forEach(cb => {
-            targetEmpresas.push(cb.value);
-        });
-    } else {
-        targetEmpresas.push(empresaCod);
+    if (!targetEmpresa) {
+        alert("Por favor, seleccione una Empresa para asignar el documento.");
+        return;
     }
-    formData.append('empresa_cod', targetEmpresas.join(','));
+    formData.append('empresa_cod', targetEmpresa);
     
     // Capturar fecha y hora local del instante real sin desfases UTC
     const ahora = new Date();
