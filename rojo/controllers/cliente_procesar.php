@@ -94,6 +94,14 @@ if ($accion === 'crear_usuario_operativo') {
     
     $rol_a_crear        = isset($_POST['rol']) ? trim($_POST['rol']) : (isset($datos['rol']) ? trim($datos['rol']) : '');
     $rol_a_crear        = $conexion->real_escape_string($rol_a_crear);
+
+    $rol_a_crear_lower = strtolower($rol_a_crear);
+    if ($rol_ejecutor === 'responsable nacional' || $rol_ejecutor === 'responsable_nacional' || $rol_ejecutor === 'tipo 1') {
+        if ($rol_a_crear_lower !== 'tipo 1' && $rol_a_crear_lower !== 'tipo 2' && $rol_a_crear_lower !== 'tipo 3') {
+            echo json_encode(["status" => "error", "message" => "Denegado: Su rango operativo solo posee privilegios para crear Tipo 1, Tipo 2 o Tipo 3."]);
+            exit;
+        }
+    }
     
     $email              = isset($_POST['email']) ? trim($_POST['email']) : (isset($datos['email']) ? trim($datos['email']) : '');
     $email              = $conexion->real_escape_string($email);

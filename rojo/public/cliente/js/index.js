@@ -170,12 +170,50 @@ function aplicarRestrictionsMatriz() {
 
     if(selectRol) selectRol.innerHTML = ""; 
     const rAct = rolActualSesion.toLowerCase();
-    if (rAct === 'administrador' || rAct === 'consultor') { if(boxForm) boxForm.style.display = "block"; if(msgBloqueo) msgBloqueo.style.display = "none"; if(selectRol) selectRol.innerHTML += `<option value="Responsable Nacional" selected>Responsable Nacional</option><option value="Tipo 1">Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; } 
-    else if (rAct === 'responsable_nacional' || rAct === 'responsable nacional') { if(boxForm) boxForm.style.display = "block"; if(msgBloqueo) msgBloqueo.style.display = "none"; if(selectRol) selectRol.innerHTML += `<option value="Tipo 1" selected>Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; }
-    else if (rAct === 'tipo 1') { if(boxForm) boxForm.style.display = "block"; if(msgBloqueo) msgBloqueo.style.display = "none"; if(selectRol) selectRol.innerHTML += `<option value="Tipo 1" selected>Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; }
-    else { if(msgBloqueo) msgBloqueo.innerHTML = `<i class="fas fa-ban"></i> Tu rango operativo NO tiene privilegios para crear nodos.`; if(msgBloqueo) msgBloqueo.style.display = "block"; if(boxForm) boxForm.style.display = "none"; }
-    if (rAct === 'tipo 2') { if(formSubidaDocs) formSubidaDocs.innerHTML = `<div style="padding:20px; text-align:center; color:#1e3a8a; background:#eff6ff; border:1px dashed #3b82f6; border-radius:12px; font-weight:600;">Modo Modificación Activo: Use el botón "Actualizar" en el catálogo.</div>`; }
-    if (rAct === 'tipo 3') { if(formSubidaDocs) formSubidaDocs.innerHTML = `<div style="padding:25px; text-align:center; color:#7c2d12; background:#fff7ed; border:1px dashed #fb923c; border-radius:12px; font-weight:600;">Modo de Solo Lectura habilitado para su rango administrativo.</div>`; }
+    
+    if (rAct === 'administrador' || rAct === 'consultor') { 
+        if(boxForm) boxForm.style.display = "block"; 
+        if(msgBloqueo) msgBloqueo.style.display = "none"; 
+        if(selectRol) selectRol.innerHTML += `<option value="Responsable Nacional" selected>Responsable Nacional</option><option value="Tipo 1">Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; 
+    } 
+    else if (rAct === 'responsable_nacional' || rAct === 'responsable nacional') { 
+        if(boxForm) boxForm.style.display = "block"; 
+        if(msgBloqueo) msgBloqueo.style.display = "none"; 
+        if(selectRol) selectRol.innerHTML += `<option value="Tipo 1" selected>Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; 
+    }
+    else if (rAct === 'tipo 1') { 
+        if(boxForm) boxForm.style.display = "block"; 
+        if(msgBloqueo) msgBloqueo.style.display = "none"; 
+        if(selectRol) selectRol.innerHTML += `<option value="Tipo 1" selected>Tipo 1</option><option value="Tipo 2">Tipo 2</option><option value="Tipo 3">Tipo 3</option>`; 
+    }
+    else { 
+        if(msgBloqueo) msgBloqueo.innerHTML = `<i class="fas fa-ban"></i> Tu rango operativo NO tiene privilegios para crear nodos.`; 
+        if(msgBloqueo) msgBloqueo.style.display = "block"; 
+        if(boxForm) boxForm.style.display = "none"; 
+    }
+
+    // Manejo de visibilidad del formulario para Tipo 2 y Tipo 3
+    const uploadForm = document.getElementById('uploadDocForm');
+    const containerFormSubida = document.getElementById('containerFormSubida');
+    
+    // Eliminar cualquier mensaje dinámico de bloqueo previo
+    const oldMsg = document.getElementById('msgBloqueoDocsDin');
+    if (oldMsg) oldMsg.remove();
+
+    if (rAct === 'tipo 2') {
+        if (uploadForm) uploadForm.style.display = 'none';
+        const msgDiv = document.createElement('div');
+        msgDiv.id = 'msgBloqueoDocsDin';
+        msgDiv.style.cssText = "padding:20px; text-align:center; color:#1e3a8a; background:#eff6ff; border:1px dashed #3b82f6; border-radius:12px; font-weight:600; margin-bottom:15px;";
+        msgDiv.innerHTML = `Modo Modificación Activo: Use el botón "Actualizar" en la tabla inferior para subir una nueva versión del archivo.`;
+        if (formSubidaDocs) formSubidaDocs.insertBefore(msgDiv, uploadForm);
+    } else if (rAct === 'tipo 3') {
+        if (uploadForm) uploadForm.style.display = 'none';
+        if (containerFormSubida) containerFormSubida.style.display = 'none';
+    } else {
+        if (uploadForm) uploadForm.style.display = 'block';
+        if (containerFormSubida) containerFormSubida.style.display = 'block';
+    }
 
     if (rAct === 'consultor') {
         if (menuPersonal) menuPersonal.style.display = 'block';
@@ -193,7 +231,12 @@ function aplicarRestrictionsMatriz() {
         document.querySelectorAll('.columna-acciones-consultor').forEach(el => el.style.display = '');
     } else {
         if (menuPersonal) menuPersonal.style.display = 'none';
-        if (menuColaboradores) menuColaboradores.style.display = 'block';
+        
+        if (rAct === 'tipo 2' || rAct === 'tipo 3') {
+            if (menuColaboradores) menuColaboradores.style.display = 'none';
+        } else {
+            if (menuColaboradores) menuColaboradores.style.display = 'block';
+        }
         
         if (tituloSeccion) tituloSeccion.innerHTML = `<i class="fas fa-id-card-clip" style="color:var(--sidebar-active);"></i> Registrar Nuevo Nodo Operativo`;
         if (lblUserNombre) lblUserNombre.innerText = "Nombre de la Empresa";
@@ -386,11 +429,17 @@ function filtrarTablaPorCategoria(categoriaElegida) {
 function renderizarTablaFiltrada(arregloDatos) {
     const b = document.getElementById('tablaDocsBody'); if(!b) return; b.innerHTML = "";
     arregloDatos.forEach((d, index) => {
+        const rAct = rolActualSesion.toLowerCase();
         let color = d.color_calculado; let txt = d.estatus_texto;
-        
         let btnVerODescarga = `<a href="${base_url}/controllers/documento_descargar.php?archivo=${d.nombre_archivo_fisico}&token_seguro=${empresaCod}" target="_blank" class="btn-action btn-view" onclick="registrarAuditoriaLectura(${d.id})"><i class="fas fa-eye"></i> Ver</a>`;
-        let botonActualizar = `<button class="btn-action btn-update" id="btn-up-${index}"><i class="fas fa-sync-alt"></i> Actualizar</button>`;
-        let botonSuspender = parseInt(d.estatus) === 0 ? `<button class="btn-action btn-activate" onclick="suspenderArchivo(${d.id})">Desarchivar</button>` : `<button class="btn-action btn-suspend" onclick="suspenderArchivo(${d.id})">Archivar</button>`;
+        let botonActualizar = "";
+        let botonSuspender = "";
+        
+        if (rAct !== 'tipo 3') {
+            botonActualizar = `<button class="btn-action btn-update" id="btn-up-${index}"><i class="fas fa-sync-alt"></i> Actualizar</button>`;
+            botonSuspender = parseInt(d.estatus) === 0 ? `<button class="btn-action btn-activate" onclick="suspenderArchivo(${d.id})">Desarchivar</button>` : `<button class="btn-action btn-suspend" onclick="suspenderArchivo(${d.id})">Archivar</button>`;
+        }
+        
         let botonHistorial = `<button class="btn-action btn-history" onclick="abrirHistorialDocumento(${d.id}, '${d.tipo_doc}')"><i class="fas fa-clock-rotate-left"></i> Historial</button>`;
         let badgeColorClass = color === 'green' ? 'green' : (color === 'yellow' ? 'orange' : (color === 'gray' ? 'neutral' : 'red'));
 
