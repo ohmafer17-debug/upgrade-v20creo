@@ -508,15 +508,15 @@ async function unificadoSubmitForm(e) {
     let targetEmpresa = document.getElementById('docEmpresaCod').value.trim();
     if (!targetEmpresa) {
         const selectExp = document.getElementById('selectEmpresaExpediente');
-        if (selectExp) {
+        if (selectExp && selectExp.value) {
             targetEmpresa = selectExp.value.trim();
         }
     }
     
     if (!targetEmpresa) {
-        alert("Por favor, seleccione una Empresa para asignar el documento.");
-        return;
+        targetEmpresa = empresaCod;
     }
+    
     formData.append('empresa_cod', targetEmpresa);
     
     // Capturar fecha y hora local del instante real sin desfases UTC
