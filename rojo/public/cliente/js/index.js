@@ -822,7 +822,7 @@ function renderizarTablaUsuarios() {
 
         let accionesHtml = "";
         if (rAct === 'consultor') {
-            let btnEditar = `<button class="btn-action edit" onclick="abrirEditarNodo('${u.cod}', '${u.nombre.replace(/'/g, "\\'")}', '${(u.encargado || '').replace(/'/g, "\\'")}', '${u.director_email || ''}', '${u.email}', '${u.email_adicional || ''}', '${u.telefono_principal || ''}', '${u.telefono_adicional || ''}', '${(u.direccion || '').replace(/'/g, "\\'")}', '${u.coordenadas || ''}', '${u.rol || ''}')"><i class="fas fa-edit"></i> Editar</button>`;
+            let btnEditar = `<button class="btn-action edit" onclick="abrirEditarNodo('${u.cod}', '${u.nombre.replace(/'/g, "\\'")}', '${(u.encargado || '').replace(/'/g, "\\'")}', '${u.director_email || ''}', '${u.email}', '${u.email_adicional || ''}', '${u.telefono_principal || ''}', '${u.telefono_adicional || ''}', '${(u.direccion || '').replace(/'/g, "\\'")}', '${u.coordenadas || ''}', '${u.coordenadas_gps || ''}', '${u.rol || ''}')"><i class="fas fa-edit"></i> Editar</button>`;
             let btnLlamar = u.telefono_principal ? `<a href="tel:${u.telefono_principal}" class="btn-action btn-view" style="background:#2563eb; color:#fff; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; padding:6px 12px; font-weight:600;"><i class="fas fa-phone"></i> Llamar</a>` : '';
             let btnSuspender = `<button class="btn-action ${esActivo ? 'btn-suspend' : 'btn-activate'}" onclick="suspenderNodoCliente('${u.cod}')"><i class="fas ${esActivo ? 'fa-user-slash' : 'fa-user-check'}"></i> ${esActivo ? 'Suspender' : 'Activar'}</button>`;
             accionesHtml = `<td class="actions-cell columna-acciones-consultor"><div class="btn-action-group" style="gap:5px;">${btnEditar}${btnLlamar}${btnSuspender}</div></td>`;
@@ -906,7 +906,7 @@ async function cargarUsuariosCliente() {
 // =================================================================
 // 🛠️ ACCIONES DE EDICIÓN Y SUSPENSIÓN DE NODOS (CONSULTOR)
 // =================================================================
-function abrirEditarNodo(cod, nombre, encargado, directorEmail, email, emailAdicional, telPrincipal, telAdicional, direccion, coordenadas, rol) {
+function abrirEditarNodo(cod, nombre, encargado, directorEmail, email, emailAdicional, telPrincipal, telAdicional, direccion, coordenadas, coordenadasGps, rol) {
     const modal = document.getElementById('modalEditarNodo');
     if (!modal) return;
 
@@ -924,17 +924,19 @@ function abrirEditarNodo(cod, nombre, encargado, directorEmail, email, emailAdic
     const wrapperDirectorEmail = document.getElementById('wrapperEditDirectorEmail');
     const wrapperDireccion = document.getElementById('wrapperEditDireccion');
     const wrapperCoordenadas = document.getElementById('wrapperEditCoordenadas');
+    const wrapperCoordenadasGps = document.getElementById('wrapperEditCoordenadasGps');
     const wrapperLogo = document.getElementById('wrapperEditLogo');
     const wrapperRol = document.getElementById('wrapperEditRol');
 
     // Determinar si es colaborador o sucursal
     // Si viene encargado, es una sucursal/nodo
-    if (encargado || direccion || coordenadas) {
+    if (encargado || direccion || coordenadas || coordenadasGps) {
         // Mostrar campos de sucursal
         if (wrapperEncargado) wrapperEncargado.style.display = '';
         if (wrapperDirectorEmail) wrapperDirectorEmail.style.display = '';
         if (wrapperDireccion) wrapperDireccion.style.display = '';
         if (wrapperCoordenadas) wrapperCoordenadas.style.display = '';
+        if (wrapperCoordenadasGps) wrapperCoordenadasGps.style.display = '';
         if (wrapperLogo) wrapperLogo.style.display = '';
         if (wrapperRol) wrapperRol.style.display = 'none';
 
@@ -942,6 +944,7 @@ function abrirEditarNodo(cod, nombre, encargado, directorEmail, email, emailAdic
         document.getElementById('editDirectorEmail').value = directorEmail;
         document.getElementById('editDireccion').value = direccion;
         document.getElementById('editCoordenadas').value = coordenadas;
+        document.getElementById('editCoordenadasGps').value = coordenadasGps || '';
         document.getElementById('editRolOriginal').value = 'Tipo 1';
     } else {
         // Mostrar campos de colaborador
@@ -949,6 +952,7 @@ function abrirEditarNodo(cod, nombre, encargado, directorEmail, email, emailAdic
         if (wrapperDirectorEmail) wrapperDirectorEmail.style.display = 'none';
         if (wrapperDireccion) wrapperDireccion.style.display = 'none';
         if (wrapperCoordenadas) wrapperCoordenadas.style.display = 'none';
+        if (wrapperCoordenadasGps) wrapperCoordenadasGps.style.display = 'none';
         if (wrapperLogo) wrapperLogo.style.display = 'none';
         if (wrapperRol) wrapperRol.style.display = '';
 
@@ -956,6 +960,7 @@ function abrirEditarNodo(cod, nombre, encargado, directorEmail, email, emailAdic
         document.getElementById('editDirectorEmail').value = '';
         document.getElementById('editDireccion').value = '';
         document.getElementById('editCoordenadas').value = '';
+        document.getElementById('editCoordenadasGps').value = '';
         document.getElementById('editRol').value = rol || 'Tipo 1';
         document.getElementById('editRolOriginal').value = rol;
     }
@@ -1027,6 +1032,7 @@ if (document.getElementById('edicionNodoForm')) {
         formData.append('telefono_adicional', document.getElementById('editTelPersonal').value.trim());
         formData.append('direccion', document.getElementById('editDireccion').value.trim());
         formData.append('coordenadas', document.getElementById('editCoordenadas').value.trim());
+        formData.append('coordenadas_gps', document.getElementById('editCoordenadasGps').value.trim());
         formData.append('rol', rolFinal);
         if (pass !== "") {
             formData.append('pass', pass);
@@ -1086,6 +1092,7 @@ if(document.getElementById('usuarioClienteForm')) {
         if (rolActualSesion.toLowerCase() === 'consultor') {
             formData.append('direccion', document.getElementById('empresaDireccion').value.trim());
             formData.append('coordenadas', document.getElementById('empresaCoordenadas').value.trim());
+            formData.append('coordenadas_gps', document.getElementById('empresaCoordenadasGps').value.trim());
             formData.append('director_email', document.getElementById('empresaDirectorEmail').value.trim());
             const logoFile = document.getElementById('empresaLogo').files[0];
             if (logoFile) {

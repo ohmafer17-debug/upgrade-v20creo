@@ -127,6 +127,9 @@ if ($accion === 'crear_usuario_operativo') {
     $coordenadas        = isset($_POST['coordenadas']) ? trim($_POST['coordenadas']) : (isset($datos['coordenadas']) ? trim($datos['coordenadas']) : '');
     $coordenadas        = $conexion->real_escape_string($coordenadas);
 
+    $coordenadas_gps    = isset($_POST['coordenadas_gps']) ? trim($_POST['coordenadas_gps']) : (isset($datos['coordenadas_gps']) ? trim($datos['coordenadas_gps']) : '');
+    $coordenadas_gps    = $conexion->real_escape_string($coordenadas_gps);
+
     $encargado          = isset($_POST['encargado']) ? trim($_POST['encargado']) : (isset($datos['encargado']) ? trim($datos['encargado']) : '');
     $encargado          = $conexion->real_escape_string($encargado);
 
@@ -135,6 +138,10 @@ if ($accion === 'crear_usuario_operativo') {
 
     if (empty($nombre) || empty($rol_a_crear) || empty($email) || empty($pass) || empty($empresa_cod)) {
         echo json_encode(["status" => "error", "message" => "Existen campos mandatorios incompletos."]);
+        exit;
+    }
+    if ($rol_ejecutor === 'consultor' && empty($coordenadas_gps)) {
+        echo json_encode(["status" => "error", "message" => "Las coordenadas (Latitud, Longitud) son obligatorias para registrar una sucursal."]);
         exit;
     }
 
@@ -231,8 +238,8 @@ if ($accion === 'crear_usuario_operativo') {
     $logo_val = $logo_nombre_fisico ? "'$logo_nombre_fisico'" : "NULL";
     $encargado_val = !empty($encargado) ? "'$encargado'" : "NULL";
     $director_email_val = !empty($director_email) ? "'$director_email'" : "NULL";
-    $queryInsert = "INSERT INTO empresas_clientes (cod, nombre, encargado, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, logo, pass, activo, rol, director_email) 
-                    VALUES ('$cod_unico_nodo', '$nombre', $encargado_val, '$email', '$email_adicional', '$telefono_principal', '$telefono_adicional', '$direccion', '$coordenadas', $logo_val, '$pass_encriptada', 1, '$rol_a_crear', $director_email_val)";
+    $queryInsert = "INSERT INTO empresas_clientes (cod, nombre, encargado, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, coordenadas_gps, logo, pass, activo, rol, director_email) 
+                    VALUES ('$cod_unico_nodo', '$nombre', $encargado_val, '$email', '$email_adicional', '$telefono_principal', '$telefono_adicional', '$direccion', '$coordenadas', '$coordenadas_gps', $logo_val, '$pass_encriptada', 1, '$rol_a_crear', $director_email_val)";
 
     if ($conexion->query($queryInsert)) {
         // 🚀 REGLA DE NEGOCIO: Si a la empresa/sucursal se le asigna un Responsable Nacional, esta debe cambiar al rango inferior (Tipo 1)
@@ -549,10 +556,10 @@ if ($accion === 'listar_usuarios') {
     $rol_ejecutor = isset($datos['rol_ejecutor']) ? strtolower(trim($datos['rol_ejecutor'])) : '';
 
     if ($rol_ejecutor === 'tipo 1' || $rol_ejecutor === 'tipo 2' || $rol_ejecutor === 'tipo 3') {
-        $res = $conexion->query("SELECT cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$empresa_cod' ORDER BY id DESC");
+        $res = $conexion->query("SELECT cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, coordenadas_gps, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$empresa_cod' ORDER BY id DESC");
     } else {
         $base_empresa = explode('/', $empresa_cod)[0];
-        $res = $conexion->query("SELECT cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY id DESC");
+        $res = $conexion->query("SELECT cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, coordenadas_gps, rol, rol AS role, activo FROM empresas_clientes WHERE cod = '$base_empresa' OR cod LIKE '$base_empresa/%' ORDER BY id DESC");
     }
     
     $usuarios = [];
@@ -685,12 +692,17 @@ if ($accion === 'editar_nodo_cliente') {
     $telefono_adicional = isset($_POST['telefono_adicional']) ? $conexion->real_escape_string(trim($_POST['telefono_adicional'])) : '';
     $direccion          = isset($_POST['direccion']) ? $conexion->real_escape_string(trim($_POST['direccion'])) : '';
     $coordenadas        = isset($_POST['coordenadas']) ? $conexion->real_escape_string(trim($_POST['coordenadas'])) : '';
+    $coordenadas_gps    = isset($_POST['coordenadas_gps']) ? $conexion->real_escape_string(trim($_POST['coordenadas_gps'])) : '';
     $director_email     = isset($_POST['director_email']) ? $conexion->real_escape_string(trim($_POST['director_email'])) : '';
     $pass               = isset($_POST['pass']) ? trim($_POST['pass']) : '';
     $rol_nuevo          = isset($_POST['rol']) ? $conexion->real_escape_string(trim($_POST['rol'])) : '';
 
     if (empty($nombre) || empty($email)) {
         echo json_encode(["status" => "error", "message" => "Nombre y Correo Electrónico son obligatorios."]);
+        exit;
+    }
+    if (!empty($encargado) && empty($coordenadas_gps)) {
+        echo json_encode(["status" => "error", "message" => "Las coordenadas (Latitud, Longitud) son obligatorias para la sucursal."]);
         exit;
     }
 
@@ -743,6 +755,7 @@ if ($accion === 'editar_nodo_cliente') {
                 telefono_adicional = '$telefono_adicional',
                 direccion = '$direccion',
                 coordenadas = '$coordenadas',
+                coordenadas_gps = '$coordenadas_gps',
                 director_email = $director_email_val
                 $pass_sql
                 $logo_sql
