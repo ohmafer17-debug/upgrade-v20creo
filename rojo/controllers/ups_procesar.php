@@ -344,13 +344,12 @@ if ($accion === 'listar_licencias_globales') {
     END ASC";
 
     if ($filtro === 'TODAS') {
-        $query = "SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes ORDER BY $ordenJerarquico, id DESC";
+        $query = "SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE cod NOT LIKE '%/%' ORDER BY $ordenJerarquico, id DESC";
         $res = $conexion->query($query);
     } else {
-        // Sentencia preparada para el filtrado dinámico por sucursal
-        $filtro_like = $filtro . "/%";
-        $stmt = $conexion->prepare("SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE (cod = ? OR cod LIKE ?) ORDER BY $ordenJerarquico, id DESC");
-        $stmt->bind_param("ss", $filtro, $filtro_like);
+        // Sentencia preparada para el filtrado de una empresa consultora raíz específica
+        $stmt = $conexion->prepare("SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE cod = ? AND cod NOT LIKE '%/%' ORDER BY $ordenJerarquico, id DESC");
+        $stmt->bind_param("s", $filtro);
         $stmt->execute();
         $res = $stmt->get_result();
     }
