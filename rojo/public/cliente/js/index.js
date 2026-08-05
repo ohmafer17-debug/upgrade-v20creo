@@ -215,6 +215,14 @@ function aplicarRestrictionsMatriz() {
         if (containerFormSubida) containerFormSubida.style.display = 'block';
     }
 
+    // Ocultar la tabla de Empresas para Tipo 1, Tipo 2 y Tipo 3 en la pestaña de Inicio
+    const containerTablaEmpresas = document.getElementById('containerTablaEmpresasCliente');
+    if (rAct === 'tipo 1' || rAct === 'tipo 2' || rAct === 'tipo 3') {
+        if (containerTablaEmpresas) containerTablaEmpresas.style.display = 'none';
+    } else {
+        if (containerTablaEmpresas) containerTablaEmpresas.style.display = 'block';
+    }
+
     if (rAct === 'consultor') {
         if (menuPersonal) menuPersonal.style.display = 'block';
         if (menuColaboradores) menuColaboradores.style.display = 'block';
