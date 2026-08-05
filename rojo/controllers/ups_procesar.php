@@ -76,9 +76,10 @@ if ($accion === 'registrar_nueva_empresa') {
         $telefono_adicional = isset($_POST['telefono_adicional']) ? trim($_POST['telefono_adicional']) : (isset($datos['telefono_adicional']) ? trim($datos['telefono_adicional']) : '');
         $direccion          = isset($_POST['direccion']) ? trim($_POST['direccion']) : (isset($datos['direccion']) ? trim($datos['direccion']) : '');
         $coordenadas        = isset($_POST['coordenadas']) ? trim($_POST['coordenadas']) : (isset($datos['coordenadas']) ? trim($datos['coordenadas']) : '');
+        $coordenadas_gps    = isset($_POST['coordenadas_gps']) ? trim($_POST['coordenadas_gps']) : (isset($datos['coordenadas_gps']) ? trim($datos['coordenadas_gps']) : '');
 
-        if (empty($empresa_nombre) || empty($email_usuario) || empty($pass_usuario)) {
-            echo json_encode(["status" => "error", "message" => "Existen campos mandatorios incompletos."]);
+        if (empty($empresa_nombre) || empty($email_usuario) || empty($pass_usuario) || empty($coordenadas_gps)) {
+            echo json_encode(["status" => "error", "message" => "Existen campos mandatorios incompletos (incluyendo Coordenadas)."]);
             exit;
         }
 
@@ -204,9 +205,9 @@ if ($accion === 'registrar_nueva_empresa') {
         $encargado          = isset($_POST['encargado']) ? trim($_POST['encargado']) : '';
         $director_email     = isset($_POST['director_email']) ? trim($_POST['director_email']) : '';
         $creado_por_final = !empty($usuario_ejecutor_email) ? $usuario_ejecutor_email : 'Sistema';
-        // Insertar incluyendo encargado, director_email y metadatos de auditoría
-        $stmt = $conexion->prepare("INSERT INTO empresas_clientes (cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, pass, activo, rol, logo, creado_por, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-        $stmt->bind_param("sssssssssssisss", $empresa_cod, $empresa_nombre, $encargado, $director_email, $email_usuario, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $pass_encriptada, $activo_inicial, $rol_inicial, $logo_nombre_fisico, $creado_por_final);
+        // Insertar incluyendo encargado, director_email, coordenadas_gps y metadatos de auditoría
+        $stmt = $conexion->prepare("INSERT INTO empresas_clientes (cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, coordenadas_gps, pass, activo, rol, logo, creado_por, fecha_creacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->bind_param("ssssssssssssisss", $empresa_cod, $empresa_nombre, $encargado, $director_email, $email_usuario, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $coordenadas_gps, $pass_encriptada, $activo_inicial, $rol_inicial, $logo_nombre_fisico, $creado_por_final);
         
         if ($stmt->execute()) {
             echo json_encode(["status" => "success", "message" => "La consultora ha sido creada exitosamente."]);
@@ -344,11 +345,11 @@ if ($accion === 'listar_licencias_globales') {
     END ASC";
 
     if ($filtro === 'TODAS') {
-        $query = "SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE cod NOT LIKE '%/%' ORDER BY $ordenJerarquico, id DESC";
+        $query = "SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, coordenadas_gps, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE cod NOT LIKE '%/%' ORDER BY $ordenJerarquico, id DESC";
         $res = $conexion->query($query);
     } else {
         // Sentencia preparada para el filtrado de una empresa consultora raíz específica
-        $stmt = $conexion->prepare("SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE cod = ? AND cod NOT LIKE '%/%' ORDER BY $ordenJerarquico, id DESC");
+        $stmt = $conexion->prepare("SELECT id, cod, nombre, encargado, director_email, email, email_adicional, telefono_principal, telefono_adicional, direccion, coordenadas, coordenadas_gps, rol, activo, logo, fecha_creacion, creado_por FROM empresas_clientes WHERE cod = ? AND cod NOT LIKE '%/%' ORDER BY $ordenJerarquico, id DESC");
         $stmt->bind_param("s", $filtro);
         $stmt->execute();
         $res = $stmt->get_result();
@@ -369,6 +370,7 @@ if ($accion === 'listar_licencias_globales') {
                 "telefono_adicional" => $row['telefono_adicional'],
                 "direccion" => $row['direccion'],
                 "coordenadas" => $row['coordenadas'],
+                "coordenadas_gps" => $row['coordenadas_gps'],
                 "rol" => $row['rol'], 
                 "activo" => $row['activo'],
                 "logo" => $row['logo'],
@@ -391,13 +393,14 @@ if ($accion === 'editar_empresa_cliente') {
     $telefono_adicional = isset($_POST['telefono_adicional']) ? trim($_POST['telefono_adicional']) : (isset($datos['telefono_adicional']) ? trim($datos['telefono_adicional']) : '');
     $direccion          = isset($_POST['direccion']) ? trim($_POST['direccion']) : (isset($datos['direccion']) ? trim($datos['direccion']) : '');
     $coordenadas        = isset($_POST['coordenadas']) ? trim($_POST['coordenadas']) : (isset($datos['coordenadas']) ? trim($datos['coordenadas']) : '');
+    $coordenadas_gps    = isset($_POST['coordenadas_gps']) ? trim($_POST['coordenadas_gps']) : (isset($datos['coordenadas_gps']) ? trim($datos['coordenadas_gps']) : '');
     $rol                = isset($_POST['rol']) ? trim($_POST['rol']) : (isset($datos['rol']) ? trim($datos['rol']) : '');
     $pass               = isset($_POST['pass']) ? trim($_POST['pass']) : (isset($datos['pass']) ? trim($datos['pass']) : '');
     $encargado          = isset($_POST['encargado']) ? trim($_POST['encargado']) : (isset($datos['encargado']) ? trim($datos['encargado']) : '');
     $director_email     = isset($_POST['director_email']) ? trim($_POST['director_email']) : (isset($datos['director_email']) ? trim($datos['director_email']) : '');
 
-    if (empty($nombre) || empty($email)) {
-        echo json_encode(["status" => "error", "message" => "El nombre comercial y el correo electrónico principal son requeridos."]);
+    if (empty($nombre) || empty($email) || empty($coordenadas_gps)) {
+        echo json_encode(["status" => "error", "message" => "El nombre comercial, el correo electrónico principal y las coordenadas son requeridos."]);
         exit;
     }
 
@@ -479,6 +482,7 @@ if ($accion === 'editar_empresa_cliente') {
                 telefono_adicional = ?, 
                 direccion = ?, 
                 coordenadas = ?, 
+                coordenadas_gps = ?, 
                 rol = ?,
                 encargado = ?,
                 director_email = ?";
@@ -493,15 +497,15 @@ if ($accion === 'editar_empresa_cliente') {
 
     $stmt = $conexion->prepare($query);
     
-    // Bind dinámico
+    // Bind dinámico incluyendo coordenadas_gps
     if ($pass_hash !== null && $logo_actualizado) {
-        $stmt->bind_param("ssssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $encargado, $director_email, $pass_hash, $logo_nombre_fisico, $id);
+        $stmt->bind_param("ssssssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $coordenadas_gps, $rol, $encargado, $director_email, $pass_hash, $logo_nombre_fisico, $id);
     } elseif ($pass_hash !== null) {
-        $stmt->bind_param("sssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $encargado, $director_email, $pass_hash, $id);
+        $stmt->bind_param("ssssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $coordenadas_gps, $rol, $encargado, $director_email, $pass_hash, $id);
     } elseif ($logo_actualizado) {
-        $stmt->bind_param("sssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $encargado, $director_email, $logo_nombre_fisico, $id);
+        $stmt->bind_param("ssssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $coordenadas_gps, $rol, $encargado, $director_email, $logo_nombre_fisico, $id);
     } else {
-        $stmt->bind_param("ssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $rol, $encargado, $director_email, $id);
+        $stmt->bind_param("sssssssssssi", $nombre, $email, $email_adicional, $telefono_principal, $telefono_adicional, $direccion, $coordenadas, $coordenadas_gps, $rol, $encargado, $director_email, $id);
     }
 
     if ($stmt->execute()) {

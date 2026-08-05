@@ -208,7 +208,11 @@
                             </div>
 
                             <div class="form-group full">
-                                <label>Enlace de Google Maps (Ubicación)</label>
+                                <label>Coordenadas (Latitud, Longitud)</label>
+                                <input type="text" id="empresaCoordenadasGps" placeholder="Ej: 19.432608, -99.133208" required>
+                            </div>
+                            <div class="form-group full">
+                                <label><a href="https://www.google.com/maps" target="_blank" style="color: #8c6b2e; text-decoration: underline; cursor: pointer;"><i class="fas fa-map-marker-alt"></i> Enlace de Google Maps (Ubicación)</a></label>
                                 <input type="url" id="empresaCoordenadas" placeholder="https://goo.gl/maps/... o enlace de ubicación" required>
                             </div>
 
@@ -451,9 +455,13 @@
                         <input type="text" id="editDireccion">
                     </div>
 
+                    <div class="form-group" style="grid-column: span 2;" id="wrapperEditCoordenadasGps">
+                        <label>Coordenadas (Latitud, Longitud)</label>
+                        <input type="text" id="editCoordenadasGps" required>
+                    </div>
                     <div class="form-group" style="grid-column: span 2;" id="wrapperEditCoordenadas">
-                        <label>Enlace de Google Maps (Ubicación)</label>
-                        <input type="url" id="editCoordenadas">
+                        <label><a href="https://www.google.com/maps" target="_blank" style="color: #8c6b2e; text-decoration: underline; cursor: pointer;"><i class="fas fa-map-marker-alt"></i> Enlace de Google Maps (Ubicación)</a></label>
+                        <input type="url" id="editCoordenadas" required>
                     </div>
                     
                     <div class="form-group" id="wrapperEditRol" style="display:none;">
@@ -485,6 +493,6 @@
         </div>
     </div>
 
-    <script src="js/index.js?v=14"></script>
+    <script src="js/index.js?v=15"></script>
 </body>
 </html>

@@ -216,6 +216,7 @@ document.getElementById('registroEmpresaForm').addEventListener('submit', async 
         formData.append('telefono_adicional', document.getElementById('telefonoUsuarioAdicional').value.trim());
         formData.append('direccion', document.getElementById('empresaDireccion').value.trim());
         formData.append('coordenadas', document.getElementById('empresaCoordenadas').value.trim());
+        formData.append('coordenadas_gps', document.getElementById('empresaCoordenadasGps').value.trim());
         formData.append('rol_inicial', 'Consultor');
         formData.append('pass_usuario', pass);
         formData.append('rn_vinculado', 'NINGUNO');
@@ -416,6 +417,7 @@ function prepararEdicionEmpresa(index) {
     document.getElementById('editEmpresaTelAdicional').value = emp.telefono_adicional || '';
     document.getElementById('editEmpresaDireccion').value = emp.direccion || '';
     document.getElementById('editEmpresaCoordenadas').value = emp.coordenadas || '';
+    document.getElementById('editEmpresaCoordenadasGps').value = emp.coordenadas_gps || '';
     document.getElementById('editEmpresaRol').value = emp.rol || 'Consultor';
     document.getElementById('editEmpresaPass').value = ''; // Vacío por defecto
     
@@ -473,6 +475,7 @@ document.getElementById('edicionEmpresaForm').addEventListener('submit', async f
     formData.append('telefono_adicional', document.getElementById('editEmpresaTelAdicional').value.trim());
     formData.append('direccion', document.getElementById('editEmpresaDireccion').value.trim());
     formData.append('coordenadas', document.getElementById('editEmpresaCoordenadas').value.trim());
+    formData.append('coordenadas_gps', document.getElementById('editEmpresaCoordenadasGps').value.trim());
     formData.append('rol', document.getElementById('editEmpresaRol').value);
     formData.append('pass', pass);
     formData.append('usuario_ejecutor_email', localStorage.getItem('ups_sesion_email') || '');
